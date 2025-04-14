@@ -1,0 +1,99 @@
+/* 上传模块样式 */
+
+/* 文件上传区域 */
+.upload-area {
+    margin-bottom: 2rem;
+}
+
+.file-drop-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background-color: rgba(248, 249, 250, 0.5);
+    margin-bottom: 1rem;
+}
+
+.file-drop-area.active {
+    border-color: var(--primary-color);
+    background-color: rgba(74, 108, 247, 0.05);
+}
+
+.file-drop-area p {
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+}
+
+.file-drop-area .btn {
+    margin-top: 0.5rem;
+}
+
+/* 文件信息样式 */
+.file-info {
+    background-color: rgba(74, 108, 247, 0.05);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.file-info p {
+    margin-bottom: 0.5rem;
+}
+
+.file-info button {
+    margin-top: 0.5rem;
+}
+
+/* 预览区域样式 */
+#previewSection {
+    margin-top: 2rem;
+}
+
+.preview-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+.preview-table {
+    min-width: 100%;
+    background-color: var(--card-bg);
+}
+
+.preview-table th {
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-color);
+    z-index: 10;
+}
+
+/* 文件命名表单 */
+.file-naming-form {
+    background-color: rgba(248, 249, 250, 0.5);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.file-naming-form h3 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+    .file-drop-area {
+        padding: 1.5rem;
+    }
+    
+    .preview-table-container {
+        max-height: 250px;
+    }
+    
+    .file-naming-form {
+        padding: 1rem;
+    }
+} 

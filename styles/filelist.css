@@ -1,0 +1,102 @@
+/* 文件列表模块样式 */
+
+.file-list-container {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.file-list-table {
+    width: 100%;
+    min-width: 800px; /* 确保在小屏幕上可以横向滚动 */
+}
+
+.file-list-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-color);
+    z-index: 5;
+}
+
+.file-list-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.file-list-table tbody tr:hover {
+    background-color: rgba(74, 108, 247, 0.02);
+}
+
+/* 操作按钮 */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+    background-color: transparent;
+    border: 1px solid;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-btn {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.view-btn:hover {
+    background-color: rgba(74, 108, 247, 0.05);
+}
+
+.delete-btn {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.delete-btn:hover {
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
+/* 分页控件 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+.pagination-btn {
+    margin: 0 0.2rem;
+    min-width: 35px;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover {
+    background-color: rgba(74, 108, 247, 0.1);
+}
+
+.pagination-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+    .file-list-container {
+        margin-left: -1rem;
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+} 

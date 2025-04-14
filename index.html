@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩分析系统</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/upload.css">
+    <link rel="stylesheet" href="styles/filelist.css">
+    <!-- 引入xlsx库用于解析Excel文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- 引入PapaParse库用于解析CSV文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>成绩分析系统</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#" class="active" data-section="upload-section">数据上传</a></li>
+                <li><a href="#" data-section="file-list-section">文件列表</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 数据上传模块 -->
+        <section id="upload-section" class="section active">
+            <div class="container">
+                <div class="card">
+                    <h2>数据上传</h2>
+                    <div class="upload-area">
+                        <div class="file-drop-area" id="dropArea">
+                            <p>将Excel或CSV文件拖放到此处，或</p>
+                            <label for="fileInput" class="btn primary-btn">选择文件</label>
+                            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                        </div>
+                        
+                        <div class="file-info" id="fileInfo" style="display: none;">
+                            <p>文件名: <span id="fileName"></span></p>
+                            <p>文件大小: <span id="fileSize"></span></p>
+                            <button id="clearFileBtn" class="btn secondary-btn">清除</button>
+                        </div>
+                    </div>
+
+                    <!-- 数据预览区域 -->
+                    <div id="previewSection" style="display: none;">
+                        <h3>数据预览</h3>
+                        <div class="preview-table-container">
+                            <table id="previewTable" class="preview-table">
+                                <!-- 数据预览表格将通过JavaScript填充 -->
+                            </table>
+                        </div>
+                        
+                        <!-- 文件命名表单 -->
+                        <div class="file-naming-form">
+                            <h3>为数据文件命名</h3>
+                            <div class="form-group">
+                                <label for="dataName">名称:</label>
+                                <input type="text" id="dataName" placeholder="例如：期中考试">
+                            </div>
+                            <div class="form-group">
+                                <label for="dataDate">日期:</label>
+                                <input type="date" id="dataDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="dataClass">班级:</label>
+                                <input type="text" id="dataClass" placeholder="例如：三年级二班">
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button id="cancelBtn" class="btn secondary-btn">取消</button>
+                                <button id="saveDataBtn" class="btn primary-btn">保存数据</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 文件列表模块 -->
+        <section id="file-list-section" class="section">
+            <div class="container">
+                <div class="card">
+                    <h2>文件列表</h2>
+                    <div class="file-list-container">
+                        <table id="fileListTable" class="file-list-table">
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>日期</th>
+                                    <th>班级</th>
+                                    <th>上传时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 文件列表将通过JavaScript填充 -->
+                            </tbody>
+                        </table>
+                        <div id="emptyFileList" class="empty-message">
+                            <p>暂无上传的数据文件</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2023 成绩分析系统 | 纯前端实现</p>
+    </footer>
+
+    <!-- JavaScript文件 -->
+    <script src="scripts/app.js"></script>
+    <script src="scripts/upload.js"></script>
+    <script src="scripts/storage.js"></script>
+    <script src="scripts/fileList.js"></script>
+</body>
+</html> 
