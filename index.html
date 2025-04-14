@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/upload.css">
     <link rel="stylesheet" href="styles/filelist.css">
+    <link rel="stylesheet" href="styles/analysis.css">
     <!-- 引入xlsx库用于解析Excel文件 -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- 引入PapaParse库用于解析CSV文件 -->
@@ -21,6 +22,7 @@
             <ul>
                 <li><a href="#" class="active" data-section="upload-section">数据上传</a></li>
                 <li><a href="#" data-section="file-list-section">文件列表</a></li>
+                <li><a href="#" data-section="analysis-section">数据分析</a></li>
             </ul>
         </nav>
     </header>
@@ -54,6 +56,18 @@
                             </table>
                         </div>
                         
+                        <!-- 分页控制 -->
+                        <div class="pagination-container">
+                            <div class="pagination-info">
+                                显示 <span id="pageStart">1</span>-<span id="pageEnd">10</span> 条，共 <span id="totalRows">0</span> 条
+                            </div>
+                            <div class="pagination">
+                                <button id="prevPageBtn" class="pagination-btn" disabled>上一页</button>
+                                <div id="paginationNumbers" class="pagination-numbers"></div>
+                                <button id="nextPageBtn" class="pagination-btn">下一页</button>
+                            </div>
+                        </div>
+                        
                         <!-- 文件命名表单 -->
                         <div class="file-naming-form">
                             <h3>为数据文件命名</h3>
@@ -83,6 +97,27 @@
         <!-- 文件列表模块 -->
         <section id="file-list-section" class="section">
             <div class="container">
+                <!-- 分数线设置卡片 -->
+                <div class="card">
+                    <h2>分数线设置</h2>
+                    <div class="score-thresholds">
+                        <div class="threshold-group">
+                            <label for="passScore">及格线:</label>
+                            <input type="number" id="passScore" min="0" max="100" value="60" class="threshold-input">
+                        </div>
+                        <div class="threshold-group">
+                            <label for="goodScore">良好线:</label>
+                            <input type="number" id="goodScore" min="0" max="100" value="75" class="threshold-input">
+                        </div>
+                        <div class="threshold-group">
+                            <label for="excellentScore">优秀线:</label>
+                            <input type="number" id="excellentScore" min="0" max="150" value="90" class="threshold-input">
+                        </div>
+                        <button id="saveThresholdsBtn" class="btn primary-btn">保存设置</button>
+                    </div>
+                </div>
+                
+                <!-- 文件列表卡片 -->
                 <div class="card">
                     <h2>文件列表</h2>
                     <div class="file-list-container">
@@ -107,6 +142,35 @@
                 </div>
             </div>
         </section>
+        
+        <!-- 数据分析模块 -->
+        <section id="analysis-section" class="section">
+            <div class="container">
+                <div class="card">
+                    <h2>数据分析</h2>
+                    
+                    <!-- 分析类型选择 - 下拉框 -->
+                    <div class="analysis-type-selection">
+                        <div class="form-group analysis-type-dropdown">
+                            <label for="analysisTypeSelect">分析类型:</label>
+                            <select id="analysisTypeSelect" class="select-input">
+                                <option value="">-- 请选择分析类型 --</option>
+                                <option value="basic">基础指标展示</option>
+                                <option value="personal-detail">个人成绩详情图</option>
+                                <option value="personal-trend">个人成绩变化趋势图</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 分析结果区域 -->
+                    <div id="analysisResult" class="analysis-result">
+                        <div class="empty-analysis">
+                            <p>请选择分析类型</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer>
@@ -118,5 +182,6 @@
     <script src="scripts/upload.js"></script>
     <script src="scripts/storage.js"></script>
     <script src="scripts/fileList.js"></script>
+    <script src="scripts/analysis.js"></script>
 </body>
 </html> 

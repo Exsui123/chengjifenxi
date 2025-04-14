@@ -7,6 +7,12 @@
 let currentFile = null;
 // 解析后的数据
 let parsedData = null;
+// 当前页码
+let currentPage = 1;
+// 每页行数
+let rowsPerPage = 10;
+// 总页数
+let totalPages = 1;
 
 // 等待DOM完全加载后执行
 document.addEventListener('DOMContentLoaded', function() {
@@ -29,6 +35,10 @@ function initUploadModule() {
     const cancelBtn = document.getElementById('cancelBtn');
     const saveDataBtn = document.getElementById('saveDataBtn');
     
+    // 分页控制元素
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    
     // 如果元素不存在，表示不在上传页面，直接返回
     if (!dropArea || !fileInput) return;
     
@@ -43,6 +53,12 @@ function initUploadModule() {
     
     // 为保存按钮添加点击事件
     saveDataBtn.addEventListener('click', saveFileData);
+    
+    // 为分页按钮添加事件
+    if (prevPageBtn && nextPageBtn) {
+        prevPageBtn.addEventListener('click', goToPreviousPage);
+        nextPageBtn.addEventListener('click', goToNextPage);
+    }
     
     // 拖放功能
     dropArea.addEventListener('dragover', function(e) {
@@ -94,6 +110,9 @@ function handleFileSelect(event) {
     fileName.textContent = file.name;
     fileSize.textContent = formatFileSize(file.size);
     fileInfo.style.display = 'block';
+    
+    // 重置分页
+    currentPage = 1;
     
     // 解析文件
     parseFile(file);
@@ -172,9 +191,35 @@ function displayPreview(data) {
         return;
     }
     
-    // 获取预览表格和区域
+    // 计算总页数
+    const dataBody = data.slice(1); // 除去表头的数据
+    totalPages = Math.ceil(dataBody.length / rowsPerPage);
+    
+    // 更新分页信息
+    updatePaginationInfo(dataBody.length);
+    
+    // 渲染当前页数据
+    renderTablePage(data);
+    
+    // 生成分页按钮
+    generatePaginationButtons();
+    
+    // 显示预览部分
+    document.getElementById('previewSection').style.display = 'block';
+    
+    // 自动分析数据，检查第一行是否包含学科名称
+    validateDataFormat(data[0]);
+}
+
+/**
+ * 渲染表格当前页
+ * @param {Array} data - 完整数据
+ */
+function renderTablePage(data) {
+    if (!data || data.length === 0) return;
+    
+    // 获取预览表格
     const previewTable = document.getElementById('previewTable');
-    const previewSection = document.getElementById('previewSection');
     
     // 清空表格
     previewTable.innerHTML = '';
@@ -197,9 +242,15 @@ function displayPreview(data) {
     // 创建表体
     const tbody = document.createElement('tbody');
     
-    // 最多显示10行预览数据
-    const previewRows = data.slice(1, Math.min(11, data.length));
-    previewRows.forEach(row => {
+    // 计算当前页的起始和结束索引
+    const startIndex = (currentPage - 1) * rowsPerPage + 1; // +1 是因为第0行是表头
+    const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+    
+    // 获取当前页数据
+    const pageRows = data.slice(startIndex, endIndex);
+    
+    // 渲染行
+    pageRows.forEach(row => {
         const tr = document.createElement('tr');
         
         // 处理每个单元格
@@ -223,11 +274,136 @@ function displayPreview(data) {
     
     previewTable.appendChild(tbody);
     
-    // 显示预览部分
-    previewSection.style.display = 'block';
+    // 更新分页信息
+    updatePageDisplay();
+}
+
+/**
+ * 更新分页信息显示
+ */
+function updatePaginationInfo(totalRowCount) {
+    const totalRowsElement = document.getElementById('totalRows');
+    if (totalRowsElement) {
+        totalRowsElement.textContent = totalRowCount;
+    }
+}
+
+/**
+ * 更新页面显示
+ */
+function updatePageDisplay() {
+    // 更新页码信息
+    const pageStartElement = document.getElementById('pageStart');
+    const pageEndElement = document.getElementById('pageEnd');
     
-    // 自动分析数据，检查第一行是否包含学科名称
-    validateDataFormat(headers);
+    if (pageStartElement && pageEndElement && parsedData) {
+        const dataBody = parsedData.slice(1); // 除去表头的数据
+        const startIndex = (currentPage - 1) * rowsPerPage + 1;
+        const endIndex = Math.min(startIndex + rowsPerPage - 1, dataBody.length);
+        
+        pageStartElement.textContent = startIndex;
+        pageEndElement.textContent = endIndex;
+    }
+    
+    // 更新按钮状态
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    
+    if (prevPageBtn) {
+        prevPageBtn.disabled = currentPage === 1;
+    }
+    
+    if (nextPageBtn) {
+        nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+    }
+    
+    // 更新分页按钮状态
+    updatePaginationButtons();
+}
+
+/**
+ * 生成分页按钮
+ */
+function generatePaginationButtons() {
+    const paginationNumbers = document.getElementById('paginationNumbers');
+    if (!paginationNumbers) return;
+    
+    // 清空现有按钮
+    paginationNumbers.innerHTML = '';
+    
+    // 决定显示哪些页码按钮
+    let startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(startPage + 4, totalPages);
+    
+    // 调整起始页，确保总是显示5个按钮（如果有足够多的页）
+    if (endPage - startPage < 4 && totalPages > 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+    
+    // 生成页码按钮
+    for (let i = startPage; i <= endPage; i++) {
+        const pageButton = document.createElement('div');
+        pageButton.className = `page-number ${i === currentPage ? 'active' : ''}`;
+        pageButton.textContent = i;
+        pageButton.setAttribute('data-page', i);
+        
+        // 添加点击事件
+        pageButton.addEventListener('click', function() {
+            goToPage(parseInt(this.getAttribute('data-page')));
+        });
+        
+        paginationNumbers.appendChild(pageButton);
+    }
+}
+
+/**
+ * 更新分页按钮状态
+ */
+function updatePaginationButtons() {
+    const paginationNumbers = document.getElementById('paginationNumbers');
+    if (!paginationNumbers) return;
+    
+    // 更新按钮活动状态
+    const pageButtons = paginationNumbers.querySelectorAll('.page-number');
+    pageButtons.forEach(button => {
+        const pageNum = parseInt(button.getAttribute('data-page'));
+        if (pageNum === currentPage) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * 跳转到上一页
+ */
+function goToPreviousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderTablePage(parsedData);
+    }
+}
+
+/**
+ * 跳转到下一页
+ */
+function goToNextPage() {
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderTablePage(parsedData);
+    }
+}
+
+/**
+ * 跳转到指定页
+ * @param {number} pageNumber - 页码
+ */
+function goToPage(pageNumber) {
+    if (pageNumber >= 1 && pageNumber <= totalPages) {
+        currentPage = pageNumber;
+        renderTablePage(parsedData);
+    }
 }
 
 /**
@@ -267,6 +443,8 @@ function clearSelectedFile() {
     // 重置状态
     currentFile = null;
     parsedData = null;
+    currentPage = 1;
+    totalPages = 1;
     
     // 清空文件输入框
     const fileInput = document.getElementById('fileInput');

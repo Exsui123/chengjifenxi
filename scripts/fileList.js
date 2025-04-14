@@ -3,10 +3,145 @@
  * 负责展示和管理已上传的文件
  */
 
+// 默认分数线设置
+const DEFAULT_THRESHOLDS = {
+    pass: 60,      // 及格线
+    good: 75,      // 良好线
+    excellent: 90  // 优秀线
+};
+
+// 当前分数线设置
+let currentThresholds = {...DEFAULT_THRESHOLDS};
+
 // 等待DOM完全加载后执行
 document.addEventListener('DOMContentLoaded', function() {
     initFileListModule();
+    initScoreThresholds();
 });
+
+/**
+ * 初始化分数线设置功能
+ */
+function initScoreThresholds() {
+    // 获取分数线相关DOM元素
+    const passScoreInput = document.getElementById('passScore');
+    const goodScoreInput = document.getElementById('goodScore');
+    const excellentScoreInput = document.getElementById('excellentScore');
+    const saveThresholdsBtn = document.getElementById('saveThresholdsBtn');
+    
+    // 如果元素不存在，表示不在文件列表页面，直接返回
+    if (!passScoreInput || !goodScoreInput || !excellentScoreInput || !saveThresholdsBtn) return;
+    
+    // 从本地存储加载分数线设置
+    loadThresholdsFromStorage();
+    
+    // 设置输入框的初始值
+    passScoreInput.value = currentThresholds.pass;
+    goodScoreInput.value = currentThresholds.good;
+    excellentScoreInput.value = currentThresholds.excellent;
+    
+    // 为保存按钮添加点击事件
+    saveThresholdsBtn.addEventListener('click', saveThresholds);
+    
+    // 输入验证：确保良好线大于及格线，优秀线大于良好线
+    passScoreInput.addEventListener('change', validateThresholds);
+    goodScoreInput.addEventListener('change', validateThresholds);
+    excellentScoreInput.addEventListener('change', validateThresholds);
+}
+
+/**
+ * 验证分数线设置的合理性
+ */
+function validateThresholds() {
+    const passScoreInput = document.getElementById('passScore');
+    const goodScoreInput = document.getElementById('goodScore');
+    const excellentScoreInput = document.getElementById('excellentScore');
+    
+    if (!passScoreInput || !goodScoreInput || !excellentScoreInput) return;
+    
+    let passScore = parseInt(passScoreInput.value) || 0;
+    let goodScore = parseInt(goodScoreInput.value) || 0;
+    let excellentScore = parseInt(excellentScoreInput.value) || 0;
+    
+    // 确保值在合理范围内
+    passScore = Math.max(0, Math.min(100, passScore));
+    goodScore = Math.max(0, Math.min(100, goodScore));
+    excellentScore = Math.max(0, Math.min(150, excellentScore));
+    
+    // 确保分数线递增
+    if (goodScore < passScore) {
+        goodScore = passScore;
+    }
+    
+    if (excellentScore < goodScore) {
+        excellentScore = goodScore;
+    }
+    
+    // 更新输入框的值
+    passScoreInput.value = passScore;
+    goodScoreInput.value = goodScore;
+    excellentScoreInput.value = excellentScore;
+}
+
+/**
+ * 保存分数线设置
+ */
+function saveThresholds() {
+    const passScoreInput = document.getElementById('passScore');
+    const goodScoreInput = document.getElementById('goodScore');
+    const excellentScoreInput = document.getElementById('excellentScore');
+    
+    if (!passScoreInput || !goodScoreInput || !excellentScoreInput) return;
+    
+    // 验证分数线设置
+    validateThresholds();
+    
+    // 更新当前分数线设置
+    currentThresholds = {
+        pass: parseInt(passScoreInput.value),
+        good: parseInt(goodScoreInput.value),
+        excellent: parseInt(excellentScoreInput.value)
+    };
+    
+    // 保存到本地存储
+    saveThresholdsToStorage();
+    
+    showMessage('分数线设置已保存', 'success');
+}
+
+/**
+ * 从本地存储加载分数线设置
+ */
+function loadThresholdsFromStorage() {
+    const storedThresholds = localStorage.getItem('gradeAnalysisThresholds');
+    if (storedThresholds) {
+        try {
+            const thresholds = JSON.parse(storedThresholds);
+            // 确保所有必需的属性都存在
+            if (typeof thresholds.pass === 'number' && 
+                typeof thresholds.good === 'number' && 
+                typeof thresholds.excellent === 'number') {
+                currentThresholds = thresholds;
+            }
+        } catch (error) {
+            console.error('解析分数线设置时出错:', error);
+            // 如果出错，使用默认设置
+            currentThresholds = {...DEFAULT_THRESHOLDS};
+        }
+    }
+}
+
+/**
+ * 保存分数线设置到本地存储
+ */
+function saveThresholdsToStorage() {
+    try {
+        localStorage.setItem('gradeAnalysisThresholds', JSON.stringify(currentThresholds));
+    } catch (error) {
+        console.error('保存分数线设置时出错:', error);
+        showMessage('保存分数线设置失败', 'error');
+    }
+}
 
 /**
  * 初始化文件列表模块
@@ -76,7 +211,6 @@ function refreshFileList() {
             <td>${uploadTime}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn view-btn" data-id="${file.id}">查看</button>
                     <button class="action-btn delete-btn" data-id="${file.id}">删除</button>
                 </div>
             </td>
@@ -94,15 +228,6 @@ function refreshFileList() {
  * 为文件列表中的按钮添加事件监听
  */
 function addButtonEventListeners() {
-    // 获取所有查看按钮
-    const viewButtons = document.querySelectorAll('.file-list-table .view-btn');
-    viewButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const fileId = this.getAttribute('data-id');
-            viewFileDetails(fileId);
-        });
-    });
-    
     // 获取所有删除按钮
     const deleteButtons = document.querySelectorAll('.file-list-table .delete-btn');
     deleteButtons.forEach(button => {
@@ -111,23 +236,6 @@ function addButtonEventListeners() {
             deleteFileConfirm(fileId);
         });
     });
-}
-
-/**
- * 查看文件详情
- * @param {string} fileId - 文件ID
- */
-function viewFileDetails(fileId) {
-    const fileData = getFileById(fileId);
-    if (!fileData) {
-        showMessage('无法找到文件数据', 'error');
-        return;
-    }
-    
-    // 打开分析页面，这里暂时只显示一个消息
-    // 后续会实现真正的分析页面，现在我们只是简单提示
-    showMessage(`查看文件：${fileData.name}`, 'info');
-    // 真正实现时，会打开一个新页面或者打开分析模块，显示文件详情
 }
 
 /**

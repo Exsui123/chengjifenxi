@@ -51,9 +51,9 @@
 }
 
 .preview-table-container {
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
 }
@@ -68,6 +68,70 @@
     top: 0;
     background-color: var(--bg-color);
     z-index: 10;
+}
+
+/* 分页控制样式 */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.pagination-info {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin: 0.5rem 0;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pagination-btn {
+    padding: 0.3rem 0.8rem;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not([disabled]) {
+    background-color: rgba(74, 108, 247, 0.05);
+    border-color: var(--primary-color);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.page-number {
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.page-number:hover {
+    background-color: rgba(74, 108, 247, 0.05);
+}
+
+.page-number.active {
+    background-color: var(--primary-color);
+    color: white;
 }
 
 /* 文件命名表单 */
@@ -95,5 +159,14 @@
     
     .file-naming-form {
         padding: 1rem;
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pagination {
+        margin-top: 0.5rem;
     }
 } 
