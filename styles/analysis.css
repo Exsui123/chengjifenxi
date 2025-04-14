@@ -5,6 +5,7 @@
     margin-bottom: 2rem;
 }
 
+/* 选择框样式 */
 .select-input {
     width: 100%;
     padding: 0.75rem;
@@ -18,6 +19,11 @@
 .select-input:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+.select-input:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
 }
 
 /* 分析类型选择 - 下拉框样式 */
@@ -40,6 +46,89 @@
     font-weight: 500;
     color: var(--text-color);
     text-align: left;
+}
+
+/* 分析选项区域 */
+.analysis-options {
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    background-color: rgba(248, 249, 250, 0.5);
+}
+
+.options-row {
+    display: flex;
+    gap: 2rem;
+}
+
+.options-column {
+    flex: 1;
+    min-width: 0;
+}
+
+.options-column h3 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+/* 文件选择列表 */
+.file-select-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: white;
+}
+
+.checkbox-list {
+    padding: 0.5rem;
+}
+
+.checkbox-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.checkbox-item label {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.checkbox-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
+/* 科目选择 */
+.subject-select-container {
+    margin-top: 0.5rem;
+}
+
+/* 分析按钮 */
+.analysis-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.analysis-actions .btn {
+    min-width: 150px;
+}
+
+.analysis-actions .btn:disabled {
+    background-color: var(--secondary-color);
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 /* 分析结果区域 */
@@ -79,5 +168,14 @@
 @media screen and (max-width: 768px) {
     .analysis-type-dropdown {
         max-width: 100%;
+    }
+    
+    .options-row {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .options-column {
+        width: 100%;
     }
 } 

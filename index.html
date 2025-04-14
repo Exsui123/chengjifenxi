@@ -162,6 +162,36 @@
                         </div>
                     </div>
                     
+                    <!-- 趋势分析选项区域 -->
+                    <div id="trendAnalysisOptions" style="display: none;" class="analysis-options">
+                        <div class="options-row">
+                            <!-- 文件选择列表 -->
+                            <div class="options-column">
+                                <h3>选择成绩表：</h3>
+                                <div class="file-select-container">
+                                    <div id="fileCheckboxList" class="checkbox-list">
+                                        <!-- 动态加载文件复选框 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 科目选择下拉框 -->
+                            <div class="options-column">
+                                <h3>选择科目：</h3>
+                                <div class="subject-select-container">
+                                    <select id="subjectSelect" class="select-input" disabled>
+                                        <option value="">-- 请先选择成绩表 --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 生成按钮 -->
+                        <div class="analysis-actions">
+                            <button id="generateTrendBtn" class="btn primary-btn" disabled>生成趋势图</button>
+                        </div>
+                    </div>
+                    
                     <!-- 分析结果区域 -->
                     <div id="analysisResult" class="analysis-result">
                         <div class="empty-analysis">
