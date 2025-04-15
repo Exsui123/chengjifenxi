@@ -166,6 +166,48 @@
                         </div>
                     </div>
                     
+                    <!-- 基础指标分析选项区域 -->
+                    <div id="basicAnalysisOptions" style="display: none;" class="analysis-options">
+                        <div class="options-row">
+                            <!-- 文件选择列表 -->
+                            <div class="options-column">
+                                <h3>选择成绩表：</h3>
+                                <div class="custom-dropdown">
+                                    <div class="dropdown-selected basic-dropdown-selected">
+                                        <span class="selected-text basic-selected-text">-- 请选择成绩表 --</span>
+                                        <span class="dropdown-arrow">▼</span>
+                                    </div>
+                                    <div class="dropdown-menu" id="basicFileDropdownMenu">
+                                        <!-- 动态加载文件选项 -->
+                                    </div>
+                                </div>
+                                <div class="selected-files-container">
+                                    <h4>已选择：</h4>
+                                    <div id="basicSelectedFilesList" class="selected-files-text">
+                                        <!-- 动态加载已选择的文件 -->
+                                        <div class="empty-selected">未选择任何成绩表</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 科目选择下拉框 -->
+                            <div class="options-column">
+                                <div class="subject-select-container">
+                                    <h3>选择科目：</h3>
+                                    <select id="basicSubjectSelect" class="select-input" disabled>
+                                        <option value="">-- 请先选择成绩表 --</option>
+                                        <option value="all">全部科目</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 生成按钮 -->
+                        <div class="analysis-actions">
+                            <button id="generateBasicBtn" class="btn primary-btn" disabled>生成指标分析</button>
+                        </div>
+                    </div>
+                    
                     <!-- 趋势分析选项区域 -->
                     <div id="trendAnalysisOptions" style="display: none;" class="analysis-options">
                         <div class="options-row">
