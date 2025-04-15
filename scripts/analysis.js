@@ -32,25 +32,41 @@ function initAnalysisModule() {
     const analysisTypeSelect = document.getElementById('analysisTypeSelect');
     // 获取生成趋势图按钮
     const generateTrendBtn = document.getElementById('generateTrendBtn');
+    // 获取生成详情图按钮
+    const generateDetailBtn = document.getElementById('generateDetailBtn');
     
     // 如果元素不存在，表示不在分析页面，直接返回
     if (!analysisTypeSelect) return;
     
     // 分析类型选择变化事件
     analysisTypeSelect.addEventListener('change', function() {
-        selectedAnalysisType = this.value;
+        const selectedValue = this.value;
         
-        // 根据选择的分析类型显示不同的选项
-        if (selectedAnalysisType === 'personal-trend') {
-            showTrendAnalysisOptions();
-        } else {
-            hideTrendAnalysisOptions();
-            
-            if (selectedAnalysisType) {
-                performAnalysis();
-            } else {
+        // 隐藏所有分析选项区域
+        hideAllAnalysisOptions();
+        
+        // 显示所选分析类型的选项
+        switch (selectedValue) {
+            case 'basic':
+                // 基本指标分析，无需额外选项
+                // 这里可以直接执行基本分析或显示配置选项
+                console.log('选择了基本指标分析');
+                break;
+            case 'personal-detail':
+                // 显示个人成绩详情分析选项
+                console.log('选择了个人成绩详情分析');
+                showDetailAnalysisOptions();
+                break;
+            case 'personal-trend':
+                // 显示个人趋势分析选项
+                console.log('选择了个人趋势分析');
+                showTrendAnalysisOptions();
+                break;
+            default:
+                // 没有选择任何分析类型
+                console.log('未选择分析类型');
                 clearAnalysisResult();
-            }
+                break;
         }
     });
     
@@ -74,11 +90,36 @@ function initAnalysisModule() {
         });
     }
     
+    // 详情分析的学生选择变化事件
+    const detailStudentSelect = document.getElementById('detailStudentSelect');
+    if (detailStudentSelect) {
+        detailStudentSelect.addEventListener('change', function() {
+            updateGenerateDetailButtonState();
+        });
+    }
+    
+    // 详情分析的科目选择变化事件
+    const detailSubjectSelect = document.getElementById('detailSubjectSelect');
+    if (detailSubjectSelect) {
+        detailSubjectSelect.addEventListener('change', function() {
+            updateGenerateDetailButtonState();
+        });
+    }
+    
     // 生成趋势图按钮点击事件
     if (generateTrendBtn) {
         generateTrendBtn.addEventListener('click', function() {
             if (selectedFileIds.length > 0 && selectedSubject) {
                 performTrendAnalysis();
+            }
+        });
+    }
+    
+    // 生成详情图按钮点击事件
+    if (generateDetailBtn) {
+        generateDetailBtn.addEventListener('click', function() {
+            if (selectedFileIds.length > 0) {
+                performDetailAnalysis();
             }
         });
     }
@@ -88,29 +129,54 @@ function initAnalysisModule() {
  * 初始化自定义下拉框
  */
 function initCustomDropdown() {
-    const dropdownSelected = document.querySelector('.dropdown-selected');
-    const dropdown = document.querySelector('.custom-dropdown');
+    // 初始化趋势分析下拉框
+    initDropdown('.dropdown-selected:not(.detail-dropdown-selected)', 'fileDropdownMenu');
     
-    if (!dropdownSelected || !dropdown) return;
+    // 初始化详情分析下拉框
+    initDropdown('.detail-dropdown-selected', 'detailFileDropdownMenu');
+}
+
+/**
+ * 初始化特定的下拉框
+ * @param {string} dropdownSelector - 下拉框选择器
+ * @param {string} menuId - 下拉菜单ID
+ */
+function initDropdown(dropdownSelector, menuId) {
+    const dropdownSelected = document.querySelector(dropdownSelector);
+    const dropdownMenu = document.getElementById(menuId);
+    
+    if (!dropdownSelected || !dropdownMenu) return;
+    
+    // 获取下拉框所在的父容器，用于判断是哪种类型的分析
+    const isDetailAnalysis = menuId === 'detailFileDropdownMenu';
     
     // 点击下拉框切换显示/隐藏菜单
     dropdownSelected.addEventListener('click', function(e) {
         e.stopPropagation();
+        const dropdown = this.closest('.custom-dropdown');
+        if (!dropdown) return;
+        
         dropdown.classList.toggle('open');
         
         // 如果打开下拉菜单，加载文件选项
         if (dropdown.classList.contains('open')) {
-            loadFileDropdownItems();
+            if (isDetailAnalysis) {
+                loadDetailFileDropdownItems();
+            } else {
+                loadFileDropdownItems();
+            }
         }
     });
     
     // 点击页面其他区域关闭下拉菜单
     document.addEventListener('click', function() {
-        dropdown.classList.remove('open');
+        const dropdown = dropdownSelected.closest('.custom-dropdown');
+        if (dropdown) {
+            dropdown.classList.remove('open');
+        }
     });
     
     // 阻止点击下拉菜单时关闭
-    const dropdownMenu = document.getElementById('fileDropdownMenu');
     if (dropdownMenu) {
         dropdownMenu.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -639,23 +705,6 @@ function showBasicAnalysis() {
 }
 
 /**
- * 显示个人成绩详情分析
- */
-function showPersonalDetailAnalysis() {
-    // 这个函数将在后续开发中实现
-    // 暂时只显示一个占位信息
-    const analysisResult = document.getElementById('analysisResult');
-    if (!analysisResult) return;
-    
-    analysisResult.innerHTML = `
-        <div class="analysis-info">
-            <h3>个人成绩详情分析</h3>
-            <p>此功能尚在开发中，敬请期待...</p>
-        </div>
-    `;
-}
-
-/**
  * 显示个人成绩变化趋势分析
  */
 function showPersonalTrendAnalysis() {
@@ -1077,13 +1126,13 @@ function getSubjectColumns(headers) {
  */
 function clearAnalysisResult() {
     const analysisResult = document.getElementById('analysisResult');
-    if (!analysisResult) return;
-    
-    analysisResult.innerHTML = `
-        <div class="empty-analysis">
-            <p>请选择分析类型</p>
-        </div>
-    `;
+    if (analysisResult) {
+        analysisResult.innerHTML = `
+            <div class="empty-analysis-result">
+                <p>请选择分析类型并设置相关参数后点击生成按钮</p>
+            </div>
+        `;
+    }
 }
 
 /**
@@ -1159,4 +1208,999 @@ function findStudentIdColumn(filesData) {
     
     console.log('未找到学生ID列');
     return -1;
+}
+
+/**
+ * 显示详情分析选项
+ */
+function showDetailAnalysisOptions() {
+    const detailOptions = document.getElementById('detailAnalysisOptions');
+    if (detailOptions) {
+        detailOptions.style.display = 'block';
+        
+        // 加载所有文件
+        loadAllFiles();
+        
+        // 清空分析结果区域
+        clearAnalysisResult();
+    }
+}
+
+/**
+ * 隐藏详情分析选项
+ */
+function hideDetailAnalysisOptions() {
+    const detailOptions = document.getElementById('detailAnalysisOptions');
+    if (detailOptions) {
+        detailOptions.style.display = 'none';
+    }
+    
+    // 重置下拉框文本
+    const selectedText = document.querySelector('.detail-selected-text');
+    if (selectedText) {
+        selectedText.textContent = '-- 请选择成绩表 --';
+    }
+    
+    // 重置选择状态 (保持与趋势分析共享的状态)
+    selectedFileIds = [];
+    updateDetailSelectedFilesList();
+}
+
+/**
+ * 加载详情分析的文件下拉选项
+ */
+function loadDetailFileDropdownItems() {
+    const dropdownMenu = document.getElementById('detailFileDropdownMenu');
+    if (!dropdownMenu) return;
+    
+    // 清空现有选项
+    dropdownMenu.innerHTML = '';
+    
+    // 如果没有文件，显示提示
+    if (allFilesCache.length === 0) {
+        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
+        return;
+    }
+    
+    // 添加文件选项
+    allFilesCache.forEach(file => {
+        const isSelected = selectedFileIds.includes(file.id);
+        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
+        
+        // 格式化日期
+        const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
+        
+        const item = document.createElement('div');
+        item.className = itemClass;
+        item.dataset.fileId = file.id;
+        
+        item.innerHTML = `
+            <div class="checkbox-indicator"></div>
+            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
+        `;
+        
+        // 添加点击事件
+        item.addEventListener('click', function() {
+            const fileId = this.dataset.fileId;
+            
+            // 详情分析只允许选择一个文件
+            // 清除所有选中状态
+            selectedFileIds = [];
+            dropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // 选择当前文件
+            selectedFileIds.push(fileId);
+            this.classList.add('selected');
+            
+            // 更新已选文件列表
+            updateDetailSelectedFilesList();
+            
+            // 更新学生选择列表
+            updateDetailStudentOptions();
+            
+            // 更新生成按钮状态
+            updateGenerateDetailButtonState();
+        });
+        
+        dropdownMenu.appendChild(item);
+    });
+}
+
+/**
+ * 更新详情分析的已选择文件列表
+ */
+function updateDetailSelectedFilesList() {
+    const selectedFilesList = document.getElementById('detailSelectedFilesList');
+    const selectedText = document.querySelector('.detail-selected-text');
+    
+    if (!selectedFilesList) return;
+    
+    // 清空现有内容
+    selectedFilesList.innerHTML = '';
+    
+    // 如果没有选择任何文件，显示提示
+    if (selectedFileIds.length === 0) {
+        selectedFilesList.innerHTML = '<div class="empty-selected">未选择任何成绩表</div>';
+        if (selectedText) {
+            selectedText.textContent = '-- 请选择成绩表 --';
+        }
+        return;
+    }
+    
+    // 获取选中的文件
+    const selectedFile = allFilesCache.find(f => f.id === selectedFileIds[0]);
+    if (!selectedFile) {
+        selectedFilesList.innerHTML = '<div class="empty-selected">未找到选中的成绩表</div>';
+        return;
+    }
+    
+    // 更新下拉框显示文本
+    if (selectedText) {
+        selectedText.textContent = selectedFile.name || '未命名文件';
+    }
+    
+    // 显示文件信息
+    selectedFilesList.innerHTML = `
+        <div class="selected-file-info">
+            <p>${selectedFile.name || '未命名文件'}</p>
+            <p>日期: ${selectedFile.date ? new Date(selectedFile.date).toLocaleDateString('zh-CN') : '无日期'}</p>
+            <p>班级: ${selectedFile.class || '未指定班级'}</p>
+        </div>
+    `;
+}
+
+/**
+ * 更新详情分析的学生选择列表
+ */
+function updateDetailStudentOptions() {
+    const studentSelect = document.getElementById('detailStudentSelect');
+    if (!studentSelect) return;
+    
+    console.log('开始更新详情分析的学生选择列表...');
+    
+    // 清空现有选项
+    while (studentSelect.options.length > 0) {
+        studentSelect.remove(0);
+    }
+    
+    // 如果没有选择文件，禁用学生选择
+    if (selectedFileIds.length === 0) {
+        console.log('没有选择文件，禁用学生选择下拉框');
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- 请先选择成绩表 --';
+        studentSelect.appendChild(defaultOption);
+        
+        studentSelect.disabled = true;
+        
+        // 同时禁用科目选择
+        const subjectSelect = document.getElementById('detailSubjectSelect');
+        if (subjectSelect) {
+            subjectSelect.disabled = true;
+            while (subjectSelect.options.length > 0) {
+                subjectSelect.remove(0);
+            }
+            const defaultSubjectOption = document.createElement('option');
+            defaultSubjectOption.value = '';
+            defaultSubjectOption.textContent = '-- 请先选择成绩表 --';
+            subjectSelect.appendChild(defaultSubjectOption);
+        }
+        return;
+    }
+    
+    // 启用学生选择
+    studentSelect.disabled = false;
+    
+    // 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '-- 请选择学生 --';
+    studentSelect.appendChild(defaultOption);
+    
+    // 收集选中文件的数据
+    const fileData = getFileById(selectedFileIds[0]);
+    
+    if (!fileData) {
+        console.warn(`无法获取文件数据, ID: ${selectedFileIds[0]}`);
+        studentSelect.disabled = true;
+        return;
+    }
+    
+    console.log(`成功获取文件数据, ID: ${fileData.id}, 名称: ${fileData.name}`);
+    
+    // 获取所有学生
+    console.log('开始从文件中获取学生...');
+    const students = getAllStudentsFromSelectedFiles([fileData]);
+    console.log(`找到 ${students.length} 名学生:`, students);
+    
+    // 添加学生选项
+    if (students.length > 0) {
+        console.log('开始添加学生选项到下拉框');
+        students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student.id;
+            option.textContent = student.name;
+            studentSelect.appendChild(option);
+            console.log(`已添加学生: ${student.name}, ID: ${student.id}`);
+        });
+        
+        // 更新科目选择
+        updateDetailSubjectOptions();
+    } else {
+        // 如果没有找到学生，禁用下拉框
+        console.warn('未找到任何学生数据，禁用学生选择下拉框');
+        studentSelect.disabled = true;
+        const noStudentOption = document.createElement('option');
+        noStudentOption.value = '';
+        noStudentOption.textContent = '未找到学生数据';
+        studentSelect.appendChild(noStudentOption);
+    }
+    
+    // 更新生成按钮状态
+    updateGenerateDetailButtonState();
+}
+
+/**
+ * 更新详情分析的科目选择列表
+ */
+function updateDetailSubjectOptions() {
+    const subjectSelect = document.getElementById('detailSubjectSelect');
+    if (!subjectSelect) return;
+    
+    console.log('开始更新详情分析的科目选择列表...');
+    
+    // 清空现有选项
+    while (subjectSelect.options.length > 0) {
+        subjectSelect.remove(0);
+    }
+    
+    // 如果没有选择文件，禁用科目选择
+    if (selectedFileIds.length === 0) {
+        console.log('没有选择文件，禁用科目选择下拉框');
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- 请先选择成绩表 --';
+        subjectSelect.appendChild(defaultOption);
+        
+        subjectSelect.disabled = true;
+        return;
+    }
+    
+    // 启用科目选择
+    subjectSelect.disabled = false;
+    
+    // 添加默认选项
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '-- 请选择科目 --';
+    subjectSelect.appendChild(defaultOption);
+    
+    // 添加全部科目选项
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '全部科目';
+    subjectSelect.appendChild(allOption);
+    
+    // 收集选中文件的数据
+    const fileData = getFileById(selectedFileIds[0]);
+    
+    if (!fileData) {
+        console.warn(`无法获取文件数据, ID: ${selectedFileIds[0]}`);
+        subjectSelect.disabled = true;
+        return;
+    }
+    
+    // 获取所有科目
+    const subjects = getSubjectsFromFile(fileData);
+    
+    // 添加科目选项
+    if (subjects.length > 0) {
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            subjectSelect.appendChild(option);
+        });
+    } else {
+        // 如果没有找到科目，禁用下拉框
+        subjectSelect.disabled = true;
+        const noSubjectOption = document.createElement('option');
+        noSubjectOption.value = '';
+        noSubjectOption.textContent = '未找到科目数据';
+        subjectSelect.appendChild(noSubjectOption);
+    }
+    
+    // 更新生成按钮状态
+    updateGenerateDetailButtonState();
+}
+
+/**
+ * 从文件中获取科目列表
+ * @param {Object} fileData - 文件数据
+ * @returns {Array} 科目列表
+ */
+function getSubjectsFromFile(fileData) {
+    console.log('开始提取科目列表，文件数据:', fileData);
+    
+    if (!fileData || !fileData.data) {
+        console.error('文件数据为空或格式不正确');
+        return [];
+    }
+    
+    // 检查文件数据格式，看是否使用新格式（含students数组）
+    if (fileData.data.students && Array.isArray(fileData.data.students) && fileData.data.students.length > 0) {
+        console.log('使用新数据格式提取科目');
+        // 新格式：从第一个学生的scores对象中获取科目
+        const firstStudent = fileData.data.students[0];
+        if (!firstStudent.scores) {
+            console.error('学生数据中没有成绩信息');
+            return [];
+        }
+        
+        const subjects = Object.keys(firstStudent.scores);
+        console.log('从学生scores对象中提取的科目:', subjects);
+        return subjects;
+    } else if (Array.isArray(fileData.data) && fileData.data.length > 0) {
+        console.log('使用旧数据格式（二维数组）提取科目');
+        // 旧格式：从表头（第一行）中提取科目
+        const headers = fileData.data[0];
+        const nonSubjectColumns = ['姓名', '学号', '班级', '序号', 'id', 'name', 'class', 'student', 'student_id', 'studentid'];
+        
+        // 找出所有不是学生信息的列
+        const subjects = [];
+        for (let i = 0; i < headers.length; i++) {
+            const header = headers[i];
+            if (header && typeof header === 'string') {
+                // 检查是否是非科目列
+                const isNonSubject = nonSubjectColumns.some(keyword => 
+                    header.toLowerCase().includes(keyword.toLowerCase())
+                );
+                
+                // 如果不是非科目列，则添加到科目集合中
+                if (!isNonSubject) {
+                    subjects.push(header);
+                }
+            }
+        }
+        
+        console.log('从表头提取的科目:', subjects);
+        return subjects;
+    }
+    
+    console.error('无法从文件中提取科目列表');
+    return [];
+}
+
+/**
+ * 更新生成详情图按钮状态
+ */
+function updateGenerateDetailButtonState() {
+    const generateDetailBtn = document.getElementById('generateDetailBtn');
+    const detailStudentSelect = document.getElementById('detailStudentSelect');
+    
+    if (!generateDetailBtn || !detailStudentSelect) return;
+    
+    const hasSelectedStudent = detailStudentSelect.value !== '';
+    const hasSelectedFile = selectedFileIds.length > 0;
+    
+    generateDetailBtn.disabled = !(hasSelectedStudent && hasSelectedFile);
+}
+
+/**
+ * 执行详情分析
+ */
+function performDetailAnalysis() {
+    try {
+        console.log('开始执行详情分析...');
+        
+        // 获取选择的学生
+        const studentSelect = document.getElementById('detailStudentSelect');
+        if (!studentSelect || !studentSelect.value) {
+            showToast('请选择学生', 'error');
+            console.error('未选择学生');
+            return;
+        }
+        const selectedStudent = studentSelect.value;
+        console.log('选择的学生ID:', selectedStudent);
+        
+        // 获取选择的文件
+        if (selectedFileIds.length === 0) {
+            showToast('请选择成绩表', 'error');
+            console.error('未选择成绩表');
+            return;
+        }
+        const detailFileId = selectedFileIds[0];
+        console.log('选择的文件ID:', detailFileId);
+        
+        // 获取选择的科目
+        const subjectSelect = document.getElementById('detailSubjectSelect');
+        const selectedSubject = subjectSelect ? subjectSelect.value : 'all';
+        console.log('选择的科目:', selectedSubject);
+        
+        // 获取文件数据
+        const fileData = getFileById(detailFileId);
+        if (!fileData) {
+            showToast('无法获取文件数据', 'error');
+            console.error('无法获取文件数据, ID:', detailFileId);
+            return;
+        }
+        
+        console.log('获取到的文件数据:', fileData);
+        
+        // 检查文件数据格式
+        if (!fileData.data) {
+            showToast('文件数据不完整', 'error');
+            console.error('文件数据不含data字段');
+            return;
+        }
+        
+        // 根据文件数据格式处理
+        let studentsData = [];
+        let studentData = null;
+        
+        // 处理新格式数据
+        if (fileData.data.students && Array.isArray(fileData.data.students)) {
+            console.log('使用新格式数据处理');
+            studentsData = fileData.data.students;
+            studentData = studentsData.find(student => student.id === selectedStudent);
+        } 
+        // 处理旧格式数据（二维数组）
+        else if (Array.isArray(fileData.data) && fileData.data.length > 1) {
+            console.log('使用旧格式数据处理（二维数组）');
+            
+            // 查找学生姓名列和ID列
+            const headers = fileData.data[0];
+            const studentNameColumnIndex = findStudentNameColumn([fileData]);
+            
+            if (studentNameColumnIndex === -1) {
+                showToast('无法识别学生信息列', 'error');
+                console.error('无法识别学生信息列');
+                return;
+            }
+            
+            // 找到学生行
+            const studentRow = fileData.data.find((row, index) => 
+                index > 0 && row[studentNameColumnIndex] && 
+                (row[studentNameColumnIndex] === selectedStudent || row[studentNameColumnIndex] + '_' + row[studentNameColumnIndex] === selectedStudent)
+            );
+            
+            if (!studentRow) {
+                showToast('找不到所选学生数据', 'error');
+                console.error('找不到所选学生行');
+                return;
+            }
+            
+            // 从行数据生成学生对象
+            studentData = {
+                id: selectedStudent,
+                name: studentRow[studentNameColumnIndex],
+                scores: {}
+            };
+            
+            // 获取科目列信息
+            const subjectColumns = getSubjectColumns(headers);
+            subjectColumns.forEach(column => {
+                const score = parseFloat(studentRow[column.index]);
+                if (!isNaN(score)) {
+                    studentData.scores[column.name] = score;
+                }
+            });
+            
+            // 将所有学生数据转换为新格式
+            studentsData = [];
+            for (let i = 1; i < fileData.data.length; i++) {
+                const row = fileData.data[i];
+                if (row && row.length > studentNameColumnIndex) {
+                    const student = {
+                        id: row[studentNameColumnIndex],
+                        name: row[studentNameColumnIndex],
+                        scores: {}
+                    };
+                    
+                    subjectColumns.forEach(column => {
+                        if (row.length > column.index) {
+                            const score = parseFloat(row[column.index]);
+                            if (!isNaN(score)) {
+                                student.scores[column.name] = score;
+                            }
+                        }
+                    });
+                    
+                    studentsData.push(student);
+                }
+            }
+        }
+        
+        if (!studentData) {
+            showToast('找不到所选学生数据', 'error');
+            console.error('找不到所选学生数据');
+            return;
+        }
+        
+        console.log('处理后的学生数据:', studentData);
+        console.log('处理后的所有学生数据量:', studentsData.length);
+        
+        // 保存回文件数据中以便后续使用
+        if (!fileData.data.students) {
+            fileData.data.students = studentsData;
+        }
+        
+        // 获取科目列表
+        let subjects = getSubjectsFromFile(fileData);
+        if (!subjects.length) {
+            showToast('文件中无科目数据', 'error');
+            console.error('未找到任何科目');
+            return;
+        }
+        
+        console.log('获取到的所有科目:', subjects);
+        
+        // 如果选择了特定科目，则过滤科目列表
+        if (selectedSubject !== 'all' && selectedSubject !== '') {
+            subjects = subjects.filter(subject => subject === selectedSubject);
+            console.log('过滤后的科目:', subjects);
+        }
+        
+        // 检查是否有可用科目
+        if (subjects.length === 0) {
+            showToast('选择的科目不可用', 'error');
+            console.error('过滤后没有可用科目');
+            return;
+        }
+        
+        // 生成个人详情分析
+        console.log('开始生成个人详情分析...');
+        generateDetailAnalysisResult(studentData, subjects, fileData);
+        
+    } catch (error) {
+        console.error('执行详情分析时出错:', error);
+        showToast('分析过程中发生错误: ' + error.message, 'error');
+    }
+}
+
+/**
+ * 生成个人成绩详情分析结果
+ * @param {Object} studentData - 学生数据
+ * @param {Array} subjects - 科目列表
+ * @param {Object} fileData - 文件完整数据
+ */
+function generateDetailAnalysisResult(studentData, subjects, fileData) {
+    const analysisResult = document.getElementById('analysisResult');
+    if (!analysisResult) return;
+    
+    // 计算类数据
+    const classAvgScores = calculateClassAverageScores(fileData.data.students, subjects);
+    const maxScores = calculateMaxScores(fileData.data.students, subjects);
+    
+    // 清空结果区域并添加标题
+    analysisResult.innerHTML = `
+        <h3 class="detail-title">${studentData.name} - 成绩详情分析</h3>
+        <div class="detail-analysis-container">
+            <div class="detail-summary">
+                <div class="student-info">
+                    <p><strong>学号:</strong> ${studentData.id}</p>
+                    <p><strong>班级:</strong> ${fileData.data.className || '未知班级'}</p>
+                    <p><strong>考试:</strong> ${fileData.name}</p>
+                </div>
+                <div class="score-summary">
+                    <p><strong>总分:</strong> ${calculateTotalScore(studentData, subjects)}</p>
+                    <p><strong>平均分:</strong> ${(calculateTotalScore(studentData, subjects) / subjects.length).toFixed(2)}</p>
+                    <p><strong>班级排名:</strong> ${calculateRanking(studentData, fileData.data.students, subjects)}</p>
+                </div>
+            </div>
+            <div class="subjects-detail">
+                <h4>各科成绩详情</h4>
+                <div class="subject-cards">
+                    ${generateSubjectCards(studentData, subjects, classAvgScores, maxScores, fileData.data.students)}
+                </div>
+            </div>
+            <div id="detailChartsContainer" class="detail-charts-container">
+                <div id="radarChartContainer" class="chart-container">
+                    <h4>成绩雷达图</h4>
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div id="barChartContainer" class="chart-container">
+                    <h4>与班级平均分对比</h4>
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 渲染图表
+    setTimeout(() => {
+        renderRadarChart(studentData, subjects, classAvgScores, maxScores);
+        renderBarChart(studentData, subjects, classAvgScores);
+    }, 100);
+}
+
+/**
+ * 生成科目卡片HTML
+ */
+function generateSubjectCards(studentData, subjects, classAvgScores, maxScores, allStudents) {
+    return subjects.map(subject => {
+        const score = studentData.scores[subject] || 0;
+        const classAvg = classAvgScores[subject] || 0;
+        const maxScore = maxScores[subject] || 0;
+        const ranking = calculateSubjectRanking(studentData.id, subject, allStudents);
+        
+        // 计算分数与平均分的差距
+        const diffFromAvg = score - classAvg;
+        const diffClass = diffFromAvg >= 0 ? 'positive-diff' : 'negative-diff';
+        
+        return `
+            <div class="subject-card">
+                <h5>${subject}</h5>
+                <div class="score-info">
+                    <p class="main-score">${score}</p>
+                    <p class="score-diff ${diffClass}">
+                        ${diffFromAvg >= 0 ? '+' : ''}${diffFromAvg.toFixed(2)}
+                    </p>
+                </div>
+                <div class="score-stats">
+                    <p><span>班级平均:</span> <span>${classAvg.toFixed(2)}</span></p>
+                    <p><span>最高分:</span> <span>${maxScore}</span></p>
+                    <p><span>排名:</span> <span>${ranking}/${allStudents.length}</span></p>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * 计算某科目的排名
+ */
+function calculateSubjectRanking(studentId, subject, allStudents) {
+    // 按分数排序（从高到低）
+    const sortedStudents = [...allStudents].sort((a, b) => {
+        const scoreA = a.scores[subject] || 0;
+        const scoreB = b.scores[subject] || 0;
+        return scoreB - scoreA;
+    });
+    
+    // 查找学生的排名位置
+    const position = sortedStudents.findIndex(student => student.id === studentId);
+    return position === -1 ? 'N/A' : position + 1;
+}
+
+/**
+ * 渲染雷达图
+ */
+function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
+    const canvas = document.getElementById('radarChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 准备数据
+    const studentScores = subjects.map(subject => studentData.scores[subject] || 0);
+    const classAvgScoresList = subjects.map(subject => classAvgScores[subject] || 0);
+    const maxScoresList = subjects.map(subject => maxScores[subject] || 100);
+    
+    // 计算分数转换为百分比（相对于每科满分）
+    const studentScoresPercentage = studentScores.map((score, index) => 
+        (score / maxScoresList[index]) * 100);
+    const classAvgScoresPercentage = classAvgScoresList.map((score, index) => 
+        (score / maxScoresList[index]) * 100);
+    
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: subjects,
+            datasets: [
+                {
+                    label: '个人成绩',
+                    data: studentScoresPercentage,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                },
+                {
+                    label: '班级平均',
+                    data: classAvgScoresPercentage,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: {
+                line: {
+                    borderWidth: 2
+                }
+            },
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            }
+        }
+    });
+}
+
+/**
+ * 渲染柱状图
+ */
+function renderBarChart(studentData, subjects, classAvgScores) {
+    const canvas = document.getElementById('barChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 准备数据
+    const studentScores = subjects.map(subject => studentData.scores[subject] || 0);
+    const classAvgScoresList = subjects.map(subject => classAvgScores[subject] || 0);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: subjects,
+            datasets: [
+                {
+                    label: '个人成绩',
+                    data: studentScores,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: '班级平均',
+                    data: classAvgScoresList,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+/**
+ * 计算学生总分
+ */
+function calculateTotalScore(studentData, subjects) {
+    return subjects.reduce((total, subject) => {
+        return total + (studentData.scores[subject] || 0);
+    }, 0);
+}
+
+/**
+ * 计算学生排名
+ */
+function calculateRanking(studentData, allStudents, subjects) {
+    // 计算所有学生的总分
+    const studentsWithTotalScore = allStudents.map(student => {
+        const totalScore = calculateTotalScore(student, subjects);
+        return { ...student, totalScore };
+    });
+    
+    // 按总分排序（从高到低）
+    const sortedStudents = [...studentsWithTotalScore].sort((a, b) => b.totalScore - a.totalScore);
+    
+    // 查找学生的排名位置
+    const position = sortedStudents.findIndex(student => student.id === studentData.id);
+    return position === -1 ? 'N/A' : position + 1;
+}
+
+/**
+ * 计算班级各科目平均分
+ */
+function calculateClassAverageScores(students, subjects) {
+    const result = {};
+    
+    subjects.forEach(subject => {
+        // 计算该科目的总分
+        let validScoreCount = 0;
+        const totalScore = students.reduce((sum, student) => {
+            const score = student.scores[subject];
+            if (score !== undefined && score !== null) {
+                validScoreCount++;
+                return sum + score;
+            }
+            return sum;
+        }, 0);
+        
+        // 计算平均分
+        result[subject] = validScoreCount > 0 ? totalScore / validScoreCount : 0;
+    });
+    
+    return result;
+}
+
+/**
+ * 计算班级各科目最高分
+ */
+function calculateMaxScores(students, subjects) {
+    const result = {};
+    
+    subjects.forEach(subject => {
+        // 找出该科目的最高分
+        result[subject] = students.reduce((max, student) => {
+            const score = student.scores[subject];
+            if (score !== undefined && score !== null && score > max) {
+                return score;
+            }
+            return max;
+        }, 0);
+    });
+    
+    return result;
+}
+
+/**
+ * 初始化分析类型选择器
+ */
+function initAnalysisTypeSelector() {
+    const analysisTypeSelect = document.getElementById('analysisTypeSelect');
+    if (!analysisTypeSelect) return;
+    
+    // 添加变化事件监听器
+    analysisTypeSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        
+        // 隐藏所有分析选项区域
+        hideAllAnalysisOptions();
+        
+        // 显示所选分析类型的选项
+        switch (selectedValue) {
+            case 'basic':
+                // 基本指标分析，无需额外选项
+                // 这里可以直接执行基本分析或显示配置选项
+                console.log('选择了基本指标分析');
+                break;
+            case 'personal-detail':
+                // 显示个人成绩详情分析选项
+                console.log('选择了个人成绩详情分析');
+                showDetailAnalysisOptions();
+                break;
+            case 'personal-trend':
+                // 显示个人趋势分析选项
+                console.log('选择了个人趋势分析');
+                showTrendAnalysisOptions();
+                break;
+            default:
+                // 没有选择任何分析类型
+                console.log('未选择分析类型');
+                clearAnalysisResult();
+                break;
+        }
+    });
+}
+
+/**
+ * 隐藏所有分析选项区域
+ */
+function hideAllAnalysisOptions() {
+    hideTrendAnalysisOptions();
+    hideDetailAnalysisOptions();
+    
+    // 清空分析结果区域
+    clearAnalysisResult();
+}
+
+/**
+ * 显示提示消息
+ * @param {string} message - 消息内容
+ * @param {string} type - 消息类型：'success', 'error', 'info'
+ */
+function showToast(message, type = 'info') {
+    // 检查是否已存在toast容器
+    let toastContainer = document.querySelector('.toast-container');
+    
+    // 如果不存在，创建一个
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+        
+        // 添加基本样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .toast-container {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+            }
+            .toast {
+                min-width: 250px;
+                margin-bottom: 10px;
+                padding: 12px 20px;
+                border-radius: 4px;
+                font-size: 14px;
+                opacity: 0;
+                transition: opacity 0.3s ease-in-out;
+                color: white;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .toast.show {
+                opacity: 1;
+            }
+            .toast-success {
+                background-color: #4caf50;
+            }
+            .toast-error {
+                background-color: #f44336;
+            }
+            .toast-info {
+                background-color: #2196f3;
+            }
+            .toast-close {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 16px;
+                cursor: pointer;
+                margin-left: 10px;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // 创建toast元素
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    // 添加消息和关闭按钮
+    const messageSpan = document.createElement('span');
+    messageSpan.textContent = message;
+    
+    const closeButton = document.createElement('button');
+    closeButton.className = 'toast-close';
+    closeButton.textContent = '×';
+    closeButton.onclick = function() {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toastContainer.removeChild(toast);
+        }, 300);
+    };
+    
+    toast.appendChild(messageSpan);
+    toast.appendChild(closeButton);
+    
+    // 添加到容器
+    toastContainer.appendChild(toast);
+    
+    // 显示toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // 3秒后自动关闭
+    setTimeout(() => {
+        if (toast.parentNode === toastContainer) {
+            toast.style.opacity = '0';
+            setTimeout(() => {
+                if (toast.parentNode === toastContainer) {
+                    toastContainer.removeChild(toast);
+                }
+            }, 300);
+        }
+    }, 3000);
 } 

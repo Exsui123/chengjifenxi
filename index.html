@@ -215,6 +215,55 @@
                         </div>
                     </div>
                     
+                    <!-- 详情分析选项区域 -->
+                    <div id="detailAnalysisOptions" style="display: none;" class="analysis-options">
+                        <div class="options-row">
+                            <!-- 文件选择列表 -->
+                            <div class="options-column">
+                                <h3>选择成绩表：</h3>
+                                <div class="custom-dropdown">
+                                    <div class="dropdown-selected detail-dropdown-selected">
+                                        <span class="selected-text detail-selected-text">-- 请选择成绩表 --</span>
+                                        <span class="dropdown-arrow">▼</span>
+                                    </div>
+                                    <div class="dropdown-menu" id="detailFileDropdownMenu">
+                                        <!-- 动态加载文件选项 -->
+                                    </div>
+                                </div>
+                                <div class="selected-files-container">
+                                    <h4>已选择：</h4>
+                                    <div id="detailSelectedFilesList" class="selected-files-text">
+                                        <!-- 动态加载已选择的文件 -->
+                                        <div class="empty-selected">未选择任何成绩表</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 学生选择下拉框 -->
+                            <div class="options-column">
+                                <div class="student-select-container">
+                                    <h3>选择学生：</h3>
+                                    <select id="detailStudentSelect" class="select-input" disabled>
+                                        <option value="">-- 请先选择成绩表 --</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- 添加科目选择下拉框 -->
+                                <div class="subject-select-container" style="margin-top: 2rem;">
+                                    <h3>选择科目：</h3>
+                                    <select id="detailSubjectSelect" class="select-input" disabled>
+                                        <option value="">-- 请先选择成绩表 --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 生成按钮 -->
+                        <div class="analysis-actions">
+                            <button id="generateDetailBtn" class="btn primary-btn" disabled>生成详情图</button>
+                        </div>
+                    </div>
+                    
                     <!-- 分析结果区域 -->
                     <div id="analysisResult" class="analysis-result">
                         <div class="empty-analysis">
