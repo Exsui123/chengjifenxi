@@ -12,6 +12,10 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- 引入PapaParse库用于解析CSV文件 -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <!-- 引入Chart.js库用于绘制图表 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- 引入Chart.js数据标签插件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 <body>
     <header>
@@ -191,6 +195,14 @@
                                 <h3>选择科目：</h3>
                                 <div class="subject-select-container">
                                     <select id="subjectSelect" class="select-input" disabled>
+                                        <option value="">-- 请先选择成绩表 --</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- 学生选择下拉框 -->
+                                <div class="student-select-container" style="margin-top: 2rem;">
+                                    <h3>选择学生：</h3>
+                                    <select id="studentSelect" class="select-input" disabled>
                                         <option value="">-- 请先选择成绩表 --</option>
                                     </select>
                                 </div>

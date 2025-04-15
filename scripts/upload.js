@@ -467,10 +467,22 @@ function saveFileData() {
         return;
     }
     
+    console.log('开始保存文件数据...');
+    console.log('解析后的数据预览:', parsedData.length ? `共${parsedData.length}行` : '无数据');
+    
+    // 验证解析后的数据结构
+    if (!Array.isArray(parsedData) || parsedData.length === 0) {
+        console.error('解析后的数据格式不正确', parsedData);
+        showMessage('数据格式不正确，无法保存', 'error');
+        return;
+    }
+    
     // 获取文件信息表单的值
     const dataName = document.getElementById('dataName').value.trim();
     const dataDate = document.getElementById('dataDate').value;
     const dataClass = document.getElementById('dataClass').value.trim();
+    
+    console.log(`表单数据: 名称=${dataName}, 日期=${dataDate}, 班级=${dataClass}`);
     
     // 表单验证
     if (!dataName) {
@@ -483,9 +495,20 @@ function saveFileData() {
         return;
     }
     
+    // 检查第一行是否为表头
+    const headers = parsedData[0];
+    if (!headers || !Array.isArray(headers) || headers.length === 0) {
+        console.error('数据缺少有效的表头行');
+        showMessage('数据格式不正确，缺少表头行', 'error');
+        return;
+    }
+    
+    console.log('表头信息:', headers);
+    
     // 构建文件信息对象
+    const fileId = generateUUID();
     const fileData = {
-        id: generateUUID(),
+        id: fileId,
         name: dataName,
         date: dataDate,
         class: dataClass,
@@ -493,8 +516,11 @@ function saveFileData() {
         data: parsedData
     };
     
+    console.log(`创建的文件数据对象, ID: ${fileId}`, fileData);
+    
     // 保存到本地存储
     saveToStorage(fileData);
+    console.log('数据已保存到本地存储');
     
     // 显示成功消息
     showMessage('数据已成功保存', 'success');

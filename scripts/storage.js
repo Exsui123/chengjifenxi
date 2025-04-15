@@ -11,13 +11,54 @@ const STORAGE_KEY = 'gradeAnalysisData';
  * @returns {Array} 文件数据数组
  */
 function getAllFilesFromStorage() {
+    console.log('开始从本地存储获取所有文件数据...');
     const dataString = localStorage.getItem(STORAGE_KEY);
-    if (!dataString) return [];
+    
+    if (!dataString) {
+        console.log('本地存储中没有文件数据');
+        return [];
+    }
+    
+    console.log(`从本地存储获取的数据长度: ${dataString.length} 字符`);
     
     try {
-        return JSON.parse(dataString);
+        const parsedData = JSON.parse(dataString);
+        
+        if (!Array.isArray(parsedData)) {
+            console.error('解析的数据不是数组格式', parsedData);
+            return [];
+        }
+        
+        console.log(`成功解析数据，共有 ${parsedData.length} 个文件`);
+        
+        // 验证每个文件对象的格式是否正确
+        const validFiles = parsedData.filter(file => {
+            const isValid = file && file.id && file.data && Array.isArray(file.data);
+            if (!isValid) {
+                console.warn('发现无效的文件数据:', file);
+            }
+            return isValid;
+        });
+        
+        if (validFiles.length < parsedData.length) {
+            console.warn(`过滤后的有效文件数量: ${validFiles.length}，原始数量: ${parsedData.length}`);
+        }
+        
+        // 检查每个文件的数据结构
+        validFiles.forEach(file => {
+            console.log(`文件 ID: ${file.id}, 名称: ${file.name}, 数据行数: ${file.data.length}`);
+            if (file.data.length === 0) {
+                console.warn(`文件 ${file.id} 不包含任何数据行`);
+            }
+            if (!file.data[0] || !Array.isArray(file.data[0])) {
+                console.warn(`文件 ${file.id} 表头数据不正确:`, file.data[0]);
+            }
+        });
+        
+        return validFiles;
     } catch (error) {
         console.error('解析本地存储数据时出错:', error);
+        console.error('原始数据字符串:', dataString);
         return [];
     }
 }
@@ -25,25 +66,51 @@ function getAllFilesFromStorage() {
 /**
  * 保存文件数据到本地存储
  * @param {Object} fileData - 要保存的文件数据对象
+ * @returns {boolean} 保存是否成功
  */
 function saveToStorage(fileData) {
-    if (!fileData) return;
+    if (!fileData) {
+        console.error('保存失败：文件数据为空');
+        return false;
+    }
+    
+    console.log('开始保存文件到本地存储...');
+    
+    // 验证文件数据格式是否正确
+    if (!fileData.id || !fileData.data || !Array.isArray(fileData.data)) {
+        console.error('保存失败：文件数据格式不正确', fileData);
+        return false;
+    }
+    
+    console.log(`保存文件 ID: ${fileData.id}, 名称: ${fileData.name}, 数据行数: ${fileData.data.length}`);
     
     // 获取现有数据
     const existingData = getAllFilesFromStorage();
+    console.log(`当前本地存储中有 ${existingData.length} 个文件`);
     
-    // 添加新数据
-    existingData.push(fileData);
+    // 检查是否已存在相同ID的文件
+    const duplicateIndex = existingData.findIndex(file => file.id === fileData.id);
+    if (duplicateIndex >= 0) {
+        console.warn(`存在相同ID的文件，将被覆盖: ${fileData.id}`);
+        existingData[duplicateIndex] = fileData;
+    } else {
+        // 添加新数据
+        existingData.push(fileData);
+        console.log(`文件已添加到列表，新总数: ${existingData.length}`);
+    }
     
     // 保存回本地存储
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(existingData));
+        console.log('文件成功保存到本地存储');
+        return true;
     } catch (error) {
         console.error('保存数据到本地存储时出错:', error);
         // 如果是存储空间不足错误，尝试清理一些数据
         if (error.name === 'QuotaExceededError') {
             showMessage('本地存储空间不足，请删除一些旧数据', 'error');
         }
+        return false;
     }
 }
 
@@ -53,8 +120,29 @@ function saveToStorage(fileData) {
  * @returns {Object|null} 文件数据对象或null
  */
 function getFileById(fileId) {
+    console.log(`尝试获取文件, ID: ${fileId}`);
     const allFiles = getAllFilesFromStorage();
-    return allFiles.find(file => file.id === fileId) || null;
+    console.log(`本地存储中共有 ${allFiles.length} 个文件`);
+    
+    if (allFiles.length === 0) {
+        console.warn('本地存储中没有文件数据');
+        return null;
+    }
+    
+    const foundFile = allFiles.find(file => file.id === fileId);
+    
+    if (foundFile) {
+        console.log(`找到文件: ${foundFile.name}, 数据行数: ${foundFile.data ? foundFile.data.length : '未知'}`);
+        // 检查文件数据是否完整
+        if (!foundFile.data || !Array.isArray(foundFile.data)) {
+            console.error(`文件数据不完整或格式错误: ${fileId}`);
+            console.log('文件内容:', foundFile);
+        }
+    } else {
+        console.warn(`未找到ID为 ${fileId} 的文件`);
+    }
+    
+    return foundFile || null;
 }
 
 /**
