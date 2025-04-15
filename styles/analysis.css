@@ -971,4 +971,106 @@
         padding: 0.6rem 0.8rem;
         font-size: 0.9rem;
     }
+}
+
+/* 班级分数等级占比分析相关样式 */
+.analysis-chart-container {
+    width: 100%;
+    height: 400px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.chart-title {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+    color: #333;
+}
+
+.level-proportion-stats {
+    width: 100%;
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.stats-item {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 8px;
+    text-align: center;
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+.stats-item.excellent {
+    background-color: #4CAF50;
+}
+
+.stats-item.good {
+    background-color: #2196F3;
+}
+
+.stats-item.pass {
+    background-color: #FFC107;
+    color: #333;
+}
+
+.stats-item.fail {
+    background-color: #F44336;
+}
+
+.stats-label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stats-value {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stats-percent {
+    font-size: 16px;
+}
+
+.stats-summary {
+    margin-top: 10px;
+    color: #666;
+    font-size: 14px;
+}
+
+.stats-summary p {
+    margin: 5px 0;
+}
+
+/* 确保在移动设备上正确显示 */
+@media (max-width: 768px) {
+    .stats-row {
+        flex-direction: column;
+    }
+    
+    .stats-item {
+        margin: 5px 0;
+    }
+    
+    .analysis-chart-container {
+        height: 300px;
+    }
 } 

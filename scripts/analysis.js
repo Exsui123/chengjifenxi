@@ -67,6 +67,12 @@ function initAnalysisModule() {
                 showTrendAnalysisOptions();
                 clearAnalysisResult();
                 break;
+            case 'class-level-proportion':
+                // 显示班级分数等级占比分析选项
+                console.log('选择了班级分数等级占比分析');
+                showClassLevelProportionOptions();
+                clearAnalysisResult();
+                break;
             default:
                 // 没有选择任何分析类型
                 console.log('未选择分析类型');
@@ -2390,6 +2396,12 @@ function initAnalysisTypeSelector() {
                 showTrendAnalysisOptions();
                 clearAnalysisResult();
                 break;
+            case 'class-level-proportion':
+                // 显示班级分数等级占比分析选项
+                console.log('选择了班级分数等级占比分析');
+                showClassLevelProportionOptions();
+                clearAnalysisResult();
+                break;
             default:
                 // 没有选择任何分析类型
                 console.log('未选择分析类型');
@@ -2406,6 +2418,7 @@ function hideAllAnalysisOptions() {
     hideTrendAnalysisOptions();
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
+    hideLevelProportionOptions();
 }
 
 /**
@@ -2980,4 +2993,479 @@ function hideAllAnalysisOptions() {
     hideTrendAnalysisOptions();
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
+    hideLevelProportionOptions();
+}
+
+/**
+ * 显示班级分数等级占比分析选项
+ */
+function showClassLevelProportionOptions() {
+    // 检查是否已存在班级分数等级占比分析选项区域
+    let levelProportionOptions = document.getElementById('levelProportionOptions');
+    
+    // 如果不存在，创建选项区域
+    if (!levelProportionOptions) {
+        // 创建选项区域容器
+        levelProportionOptions = document.createElement('div');
+        levelProportionOptions.id = 'levelProportionOptions';
+        levelProportionOptions.className = 'analysis-options';
+        
+        // 设置HTML内容
+        levelProportionOptions.innerHTML = `
+            <div class="options-row">
+                <!-- 文件选择列表 -->
+                <div class="options-column">
+                    <h3>选择成绩表（单选）：</h3>
+                    <select id="levelProportionFileSelect" class="select-input">
+                        <option value="">-- 请选择成绩表 --</option>
+                    </select>
+                </div>
+                
+                <!-- 科目选择下拉框 -->
+                <div class="options-column">
+                    <div class="subject-select-container">
+                        <h3>选择科目：</h3>
+                        <select id="levelProportionSubjectSelect" class="select-input" disabled>
+                            <option value="">-- 请先选择成绩表 --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 生成按钮 -->
+            <div class="analysis-actions">
+                <button id="generateLevelProportionBtn" class="btn primary-btn" disabled>生成饼图</button>
+            </div>
+        `;
+        
+        // 获取分析结果区域前的元素
+        const analysisResult = document.getElementById('analysisResult');
+        if (analysisResult) {
+            // 将选项区域插入到分析结果区域前
+            analysisResult.parentNode.insertBefore(levelProportionOptions, analysisResult);
+        }
+        
+        // 加载文件选项
+        loadLevelProportionFileOptions();
+        
+        // 添加文件选择变化事件
+        const fileSelect = document.getElementById('levelProportionFileSelect');
+        if (fileSelect) {
+            fileSelect.addEventListener('change', function() {
+                const fileId = this.value;
+                if (fileId) {
+                    // 加载选中文件的科目
+                    loadLevelProportionSubjectOptions(fileId);
+                } else {
+                    // 重置科目选择
+                    const subjectSelect = document.getElementById('levelProportionSubjectSelect');
+                    if (subjectSelect) {
+                        subjectSelect.innerHTML = '<option value="">-- 请先选择成绩表 --</option>';
+                        subjectSelect.disabled = true;
+                    }
+                    // 禁用生成按钮
+                    const generateBtn = document.getElementById('generateLevelProportionBtn');
+                    if (generateBtn) {
+                        generateBtn.disabled = true;
+                    }
+                }
+            });
+        }
+        
+        // 添加科目选择变化事件
+        const subjectSelect = document.getElementById('levelProportionSubjectSelect');
+        if (subjectSelect) {
+            subjectSelect.addEventListener('change', function() {
+                // 更新生成按钮状态
+                updateLevelProportionButtonState();
+            });
+        }
+        
+        // 添加生成按钮点击事件
+        const generateBtn = document.getElementById('generateLevelProportionBtn');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function() {
+                performLevelProportionAnalysis();
+            });
+        }
+    }
+    
+    // 显示选项区域
+    levelProportionOptions.style.display = 'block';
+    
+    // 标记当前选择的分析类型
+    selectedAnalysisType = 'class-level-proportion';
+}
+
+/**
+ * 隐藏班级分数等级占比分析选项
+ */
+function hideLevelProportionOptions() {
+    const levelProportionOptions = document.getElementById('levelProportionOptions');
+    if (levelProportionOptions) {
+        levelProportionOptions.style.display = 'none';
+    }
+}
+
+/**
+ * 加载班级分数等级占比分析的文件选项
+ */
+function loadLevelProportionFileOptions() {
+    // 获取文件选择下拉框
+    const fileSelect = document.getElementById('levelProportionFileSelect');
+    if (!fileSelect) return;
+    
+    // 清空现有选项
+    fileSelect.innerHTML = '<option value="">-- 请选择成绩表 --</option>';
+    
+    // 从本地存储获取所有文件
+    const allFiles = getAllFilesFromStorage();
+    console.log('加载班级分数等级占比分析文件选项：', allFiles);
+    
+    // 检查是否存在文件
+    if (allFiles.length === 0) {
+        showToast('没有可用的成绩文件', 'error');
+        return;
+    }
+    
+    // 添加文件选项
+    allFiles.forEach(file => {
+        const option = document.createElement('option');
+        option.value = file.id;
+        const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
+        option.textContent = `${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})`;
+        fileSelect.appendChild(option);
+    });
+}
+
+/**
+ * 加载班级分数等级占比分析的科目选项
+ * @param {string} fileId - 文件ID
+ */
+function loadLevelProportionSubjectOptions(fileId) {
+    // 获取科目选择下拉框
+    const subjectSelect = document.getElementById('levelProportionSubjectSelect');
+    if (!subjectSelect) return;
+    
+    // 清空现有选项
+    subjectSelect.innerHTML = '<option value="">-- 请选择科目 --</option>';
+    
+    // 从本地存储获取文件数据
+    const fileData = getFileById(fileId);
+    if (!fileData) {
+        showToast('无法加载文件数据', 'error');
+        return;
+    }
+    
+    console.log('加载科目选项的文件数据:', fileData);
+    
+    // 获取文件中的科目列表
+    const subjects = getSubjectsFromFile(fileData);
+    console.log('获取到的科目列表:', subjects);
+    
+    // 添加科目选项（不包括"全部科目"选项）
+    subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+    });
+    
+    // 启用科目选择
+    subjectSelect.disabled = false;
+}
+
+/**
+ * 更新生成饼图按钮状态
+ */
+function updateLevelProportionButtonState() {
+    const fileSelect = document.getElementById('levelProportionFileSelect');
+    const subjectSelect = document.getElementById('levelProportionSubjectSelect');
+    const generateBtn = document.getElementById('generateLevelProportionBtn');
+    
+    if (!fileSelect || !subjectSelect || !generateBtn) return;
+    
+    // 当文件和科目都选择后，启用生成按钮
+    generateBtn.disabled = !(fileSelect.value && subjectSelect.value);
+}
+
+/**
+ * 执行班级分数等级占比分析
+ */
+function performLevelProportionAnalysis() {
+    // 获取选择的文件ID和科目
+    const fileSelect = document.getElementById('levelProportionFileSelect');
+    const subjectSelect = document.getElementById('levelProportionSubjectSelect');
+    
+    if (!fileSelect || !subjectSelect) return;
+    
+    const fileId = fileSelect.value;
+    const subject = subjectSelect.value;
+    
+    if (!fileId || !subject) {
+        showToast('请选择成绩表和科目', 'error');
+        return;
+    }
+    
+    // 从本地存储获取文件数据
+    const fileData = getFileById(fileId);
+    if (!fileData) {
+        showToast('无法加载文件数据', 'error');
+        return;
+    }
+    
+    console.log('执行分析的文件数据:', fileData);
+    
+    // 从本地存储获取分数线设置
+    const thresholds = getThresholds();
+    
+    // 生成班级分数等级占比分析结果
+    generateLevelProportionAnalysisResult(fileData, subject, thresholds);
+}
+
+/**
+ * 获取分数线设置
+ * @returns {Object} 包含及格线、良好线和优秀线的对象
+ */
+function getThresholds() {
+    // 从本地存储获取分数线设置
+    const passScore = parseInt(localStorage.getItem('passScore')) || 60;
+    const goodScore = parseInt(localStorage.getItem('goodScore')) || 75;
+    const excellentScore = parseInt(localStorage.getItem('excellentScore')) || 90;
+    
+    return { passScore, goodScore, excellentScore };
+}
+
+/**
+ * 生成班级分数等级占比分析结果
+ * @param {Object} fileData - 文件数据
+ * @param {string} subject - 科目名称
+ * @param {Object} thresholds - 分数线设置
+ */
+function generateLevelProportionAnalysisResult(fileData, subject, thresholds) {
+    // 获取分析结果区域
+    const resultArea = document.getElementById('analysisResult');
+    if (!resultArea) return;
+    
+    // 清空分析结果区域
+    resultArea.innerHTML = '';
+    
+    let studentsData = [];
+    let headers = [];
+    let subjectIndex = -1;
+    
+    // 根据数据格式获取学生数据和科目索引
+    if (Array.isArray(fileData.data)) {
+        // 旧格式：二维数组
+        headers = fileData.data[0];
+        subjectIndex = headers.findIndex(header => header === subject);
+        
+        if (subjectIndex === -1) {
+            showToast(`未找到科目: ${subject}`, 'error');
+            return;
+        }
+        
+        // 获取学生成绩数据（排除表头）
+        studentsData = fileData.data.slice(1);
+    } else if (fileData.data.rawData && Array.isArray(fileData.data.rawData)) {
+        // 旧格式转换后：包含rawData的对象
+        headers = fileData.data.rawData[0];
+        subjectIndex = headers.findIndex(header => header === subject);
+        
+        if (subjectIndex === -1) {
+            showToast(`未找到科目: ${subject}`, 'error');
+            return;
+        }
+        
+        // 获取学生成绩数据（排除表头）
+        studentsData = fileData.data.rawData.slice(1);
+    } else if (fileData.data.students && Array.isArray(fileData.data.students)) {
+        // 新格式：包含students数组的对象
+        // 对于新格式，直接通过科目名称访问每个学生的成绩
+        studentsData = fileData.data.students;
+    } else {
+        showToast('不支持的文件数据格式', 'error');
+        return;
+    }
+    
+    // 计算各个等级的学生数量
+    let excellentCount = 0;
+    let goodCount = 0;
+    let passCount = 0;
+    let failCount = 0;
+    let invalidCount = 0;
+    
+    // 根据数据格式处理学生成绩
+    if (Array.isArray(fileData.data) || (fileData.data.rawData && Array.isArray(fileData.data.rawData))) {
+        // 旧格式：使用索引获取分数
+        studentsData.forEach(student => {
+            // 获取分数
+            const score = parseFloat(student[subjectIndex]);
+            
+            // 根据分数线判断等级
+            if (isNaN(score)) {
+                invalidCount++;
+            } else if (score >= thresholds.excellentScore) {
+                excellentCount++;
+            } else if (score >= thresholds.goodScore) {
+                goodCount++;
+            } else if (score >= thresholds.passScore) {
+                passCount++;
+            } else {
+                failCount++;
+            }
+        });
+    } else if (fileData.data.students && Array.isArray(fileData.data.students)) {
+        // 新格式：通过科目名称访问分数
+        studentsData.forEach(student => {
+            // 获取分数
+            const score = parseFloat(student.scores && student.scores[subject]);
+            
+            // 根据分数线判断等级
+            if (isNaN(score)) {
+                invalidCount++;
+            } else if (score >= thresholds.excellentScore) {
+                excellentCount++;
+            } else if (score >= thresholds.goodScore) {
+                goodCount++;
+            } else if (score >= thresholds.passScore) {
+                passCount++;
+            } else {
+                failCount++;
+            }
+        });
+    }
+    
+    // 创建容器来展示饼图
+    const chartContainer = document.createElement('div');
+    chartContainer.className = 'analysis-chart-container';
+    
+    // 创建画布元素
+    const canvas = document.createElement('canvas');
+    canvas.id = 'levelProportionChart';
+    chartContainer.appendChild(canvas);
+    
+    // 将容器添加到结果区域
+    resultArea.appendChild(chartContainer);
+    
+    // 创建标题元素
+    const titleElement = document.createElement('h3');
+    titleElement.className = 'chart-title';
+    titleElement.textContent = `${fileData.name} ${fileData.class || ''} - ${subject} 成绩等级占比`;
+    resultArea.insertBefore(titleElement, chartContainer);
+    
+    // 计算有效总人数
+    const totalValidCount = excellentCount + goodCount + passCount + failCount;
+    
+    // 只保留人数不为0的类别
+    const labels = [];
+    const data = [];
+    const backgroundColors = [];
+    const levelCounts = [
+        { label: '优秀', count: excellentCount, color: '#4CAF50' },
+        { label: '良好', count: goodCount, color: '#2196F3' },
+        { label: '及格', count: passCount, color: '#FFC107' },
+        { label: '不及格', count: failCount, color: '#F44336' }
+    ];
+    
+    // 筛选出人数不为0的类别
+    levelCounts.forEach(level => {
+        if (level.count > 0) {
+            labels.push(level.label);
+            data.push(level.count);
+            backgroundColors.push(level.color);
+        }
+    });
+    
+    // 设置饼图数据
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            data: data,
+            backgroundColor: backgroundColors,
+            borderWidth: 1
+        }]
+    };
+    
+    // 绘制饼图
+    new Chart(canvas, {
+        type: 'pie',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                datalabels: {
+                    formatter: (value, ctx) => {
+                        const percentage = (value / totalValidCount * 100).toFixed(1) + '%';
+                        return `${value}人\n${percentage}`;
+                    },
+                    color: '#fff',
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (tooltipItem) => {
+                            const value = tooltipItem.raw;
+                            const percentage = (value / totalValidCount * 100).toFixed(1);
+                            return `${tooltipItem.label}: ${value}人 (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // 添加统计信息
+    const statsElement = document.createElement('div');
+    statsElement.className = 'level-proportion-stats';
+    
+    // 构建统计项HTML
+    let statsItemsHTML = '';
+    
+    // 无论人数是否为0，都显示所有类别的统计信息
+    statsItemsHTML += `
+        <div class="stats-item excellent">
+            <span class="stats-label">优秀</span>
+            <span class="stats-value">${excellentCount}人</span>
+            <span class="stats-percent">${excellentCount > 0 ? (excellentCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+        <div class="stats-item good">
+            <span class="stats-label">良好</span>
+            <span class="stats-value">${goodCount}人</span>
+            <span class="stats-percent">${goodCount > 0 ? (goodCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+        <div class="stats-item pass">
+            <span class="stats-label">及格</span>
+            <span class="stats-value">${passCount}人</span>
+            <span class="stats-percent">${passCount > 0 ? (passCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+        <div class="stats-item fail">
+            <span class="stats-label">不及格</span>
+            <span class="stats-value">${failCount}人</span>
+            <span class="stats-percent">${failCount > 0 ? (failCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+    `;
+    
+    statsElement.innerHTML = `
+        <div class="stats-row">
+            ${statsItemsHTML}
+        </div>
+        <div class="stats-summary">
+            <p>有效数据: ${totalValidCount}人 ${invalidCount > 0 ? `(无效数据: ${invalidCount}人)` : ''}</p>
+            <p>分数线: 优秀≥${thresholds.excellentScore}分, 良好≥${thresholds.goodScore}分, 及格≥${thresholds.passScore}分</p>
+        </div>
+    `;
+    resultArea.appendChild(statsElement);
 } 
