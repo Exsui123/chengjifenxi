@@ -178,4 +178,132 @@
     .options-column {
         width: 100%;
     }
+}
+
+/* 自定义下拉框 */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.dropdown-selected {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dropdown-selected:hover {
+    border-color: var(--primary-color);
+}
+
+.dropdown-arrow {
+    color: var(--secondary-color);
+    transition: transform 0.3s ease;
+}
+
+.custom-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    display: none;
+}
+
+.custom-dropdown.open .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(74, 108, 247, 0.05);
+}
+
+.dropdown-item.selected {
+    background-color: rgba(74, 108, 247, 0.1);
+}
+
+.dropdown-item .checkbox-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+    margin-right: 0.5rem;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dropdown-item.selected .checkbox-indicator {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.dropdown-item.selected .checkbox-indicator:after {
+    content: "✓";
+    color: white;
+    font-size: 0.8rem;
+}
+
+.dropdown-item-text {
+    flex: 1;
+}
+
+/* 已选择的文件列表 - 文本形式 */
+.selected-files-container {
+    margin-top: 1rem;
+}
+
+.selected-files-container h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    display: inline-block;
+}
+
+.selected-files-text {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    min-height: 40px;
+}
+
+.empty-selected {
+    color: var(--secondary-color);
+    font-style: italic;
+    font-size: 0.9rem;
 } 

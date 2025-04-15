@@ -11,6 +11,8 @@ let selectedFileIds = [];
 let availableSubjects = [];
 // 当前选择的科目
 let selectedSubject = '';
+// 所有文件的缓存
+let allFilesCache = [];
 
 // 等待DOM完全加载后执行
 document.addEventListener('DOMContentLoaded', function() {
@@ -47,6 +49,9 @@ function initAnalysisModule() {
         }
     });
     
+    // 初始化自定义下拉框
+    initCustomDropdown();
+    
     // 科目选择变化事件
     const subjectSelect = document.getElementById('subjectSelect');
     if (subjectSelect) {
@@ -67,6 +72,40 @@ function initAnalysisModule() {
 }
 
 /**
+ * 初始化自定义下拉框
+ */
+function initCustomDropdown() {
+    const dropdownSelected = document.querySelector('.dropdown-selected');
+    const dropdown = document.querySelector('.custom-dropdown');
+    
+    if (!dropdownSelected || !dropdown) return;
+    
+    // 点击下拉框切换显示/隐藏菜单
+    dropdownSelected.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+        
+        // 如果打开下拉菜单，加载文件选项
+        if (dropdown.classList.contains('open')) {
+            loadFileDropdownItems();
+        }
+    });
+    
+    // 点击页面其他区域关闭下拉菜单
+    document.addEventListener('click', function() {
+        dropdown.classList.remove('open');
+    });
+    
+    // 阻止点击下拉菜单时关闭
+    const dropdownMenu = document.getElementById('fileDropdownMenu');
+    if (dropdownMenu) {
+        dropdownMenu.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+}
+
+/**
  * 显示趋势分析选项
  */
 function showTrendAnalysisOptions() {
@@ -74,8 +113,8 @@ function showTrendAnalysisOptions() {
     if (trendOptions) {
         trendOptions.style.display = 'block';
         
-        // 加载文件列表
-        loadFileCheckboxes();
+        // 加载所有文件
+        loadAllFiles();
         
         // 清空分析结果区域
         clearAnalysisResult();
@@ -91,61 +130,83 @@ function hideTrendAnalysisOptions() {
         trendOptions.style.display = 'none';
     }
     
+    // 重置下拉框文本
+    const selectedText = document.querySelector('.dropdown-selected .selected-text');
+    if (selectedText) {
+        selectedText.textContent = '-- 请选择成绩表 --';
+    }
+    
     // 重置选择状态
     selectedFileIds = [];
     availableSubjects = [];
     selectedSubject = '';
+    updateSelectedFilesList();
 }
 
 /**
- * 加载文件复选框列表
+ * 加载所有文件
  */
-function loadFileCheckboxes() {
-    const fileCheckboxList = document.getElementById('fileCheckboxList');
-    if (!fileCheckboxList) return;
+function loadAllFiles() {
+    // 获取所有文件数据
+    allFilesCache = getAllFilesFromStorage();
+    
+    // 按日期倒序排序
+    allFilesCache.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    
+    // 清空已选文件
+    selectedFileIds = [];
+    updateSelectedFilesList();
+}
+
+/**
+ * 加载文件下拉选项
+ */
+function loadFileDropdownItems() {
+    const dropdownMenu = document.getElementById('fileDropdownMenu');
+    if (!dropdownMenu) return;
     
     // 清空现有选项
-    fileCheckboxList.innerHTML = '';
-    
-    // 获取所有文件数据
-    const allFiles = getAllFilesFromStorage();
+    dropdownMenu.innerHTML = '';
     
     // 如果没有文件，显示提示
-    if (allFiles.length === 0) {
-        fileCheckboxList.innerHTML = '<div class="empty-message">没有可用的成绩表，请先上传数据</div>';
+    if (allFilesCache.length === 0) {
+        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
         return;
     }
     
-    // 按日期倒序排序
-    allFiles.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-    
-    // 添加文件复选框
-    allFiles.forEach(file => {
-        const checkboxItem = document.createElement('div');
-        checkboxItem.className = 'checkbox-item';
+    // 添加文件选项
+    allFilesCache.forEach(file => {
+        const isSelected = selectedFileIds.includes(file.id);
+        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
         
         // 格式化日期
         const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
         
-        checkboxItem.innerHTML = `
-            <input type="checkbox" id="file-${file.id}" data-file-id="${file.id}">
-            <label for="file-${file.id}">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</label>
+        const item = document.createElement('div');
+        item.className = itemClass;
+        item.dataset.fileId = file.id;
+        
+        item.innerHTML = `
+            <div class="checkbox-indicator"></div>
+            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
         `;
         
-        fileCheckboxList.appendChild(checkboxItem);
-        
-        // 添加复选框变化事件
-        const checkbox = checkboxItem.querySelector('input[type="checkbox"]');
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                // 添加到已选择的文件ID列表
-                if (!selectedFileIds.includes(file.id)) {
-                    selectedFileIds.push(file.id);
-                }
+        // 添加点击事件
+        item.addEventListener('click', function() {
+            const fileId = this.dataset.fileId;
+            
+            if (selectedFileIds.includes(fileId)) {
+                // 取消选择
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+                this.classList.remove('selected');
             } else {
-                // 从已选择的文件ID列表中移除
-                selectedFileIds = selectedFileIds.filter(id => id !== file.id);
+                // 选择文件
+                selectedFileIds.push(fileId);
+                this.classList.add('selected');
             }
+            
+            // 更新已选文件列表
+            updateSelectedFilesList();
             
             // 更新科目选择列表
             updateSubjectOptions();
@@ -153,7 +214,46 @@ function loadFileCheckboxes() {
             // 更新生成按钮状态
             updateGenerateButtonState();
         });
+        
+        dropdownMenu.appendChild(item);
     });
+}
+
+/**
+ * 更新已选择的文件列表
+ */
+function updateSelectedFilesList() {
+    const selectedFilesList = document.getElementById('selectedFilesList');
+    const selectedText = document.querySelector('.dropdown-selected .selected-text');
+    
+    if (!selectedFilesList) return;
+    
+    // 清空现有内容
+    selectedFilesList.innerHTML = '';
+    
+    // 如果没有选择任何文件，显示提示
+    if (selectedFileIds.length === 0) {
+        selectedFilesList.innerHTML = '<div class="empty-selected">未选择任何成绩表</div>';
+        if (selectedText) {
+            selectedText.textContent = '-- 请选择成绩表 --';
+        }
+        return;
+    }
+    
+    // 更新下拉框显示文本
+    if (selectedText) {
+        selectedText.textContent = `已选择 ${selectedFileIds.length} 个成绩表`;
+    }
+    
+    // 获取已选文件名称数组
+    const selectedFileNames = selectedFileIds.map(fileId => {
+        const file = allFilesCache.find(f => f.id === fileId);
+        if (!file) return '';
+        return file.name || '未命名文件';
+    }).filter(name => name !== ''); // 过滤掉空名称
+    
+    // 使用顿号连接文件名
+    selectedFilesList.textContent = selectedFileNames.join('、');
 }
 
 /**
