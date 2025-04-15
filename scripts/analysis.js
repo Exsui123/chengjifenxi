@@ -1967,29 +1967,38 @@ function performDetailAnalysis() {
 }
 
 /**
- * 生成个人成绩详情分析结果
- * @param {Object} studentData - 学生数据
- * @param {Array} subjects - 科目列表
- * @param {Object} fileData - 文件完整数据
+ * 生成详情分析结果
  */
 function generateDetailAnalysisResult(studentData, subjects, fileData) {
     const analysisResult = document.getElementById('analysisResult');
     if (!analysisResult) return;
     
-    // 计算类数据
+    console.log('生成详情分析结果:', studentData, subjects);
+    
+    // 计算班级平均分和最高分
     const classAvgScores = calculateClassAverageScores(fileData.data.students, subjects);
     const maxScores = calculateMaxScores(fileData.data.students, subjects);
     
-    // 提取学号（如果是姓名_学号格式，则只取学号部分）
-    let studentId = studentData.id;
-    if (studentId.includes('_')) {
-        studentId = studentId.split('_')[1];
-    }
+    // 获取学生ID
+    const studentId = studentData.id || '未知';
     
-    // 清空结果区域并添加标题
+    // 判断是否为单科模式
+    const selectedSubject = document.getElementById('detailSubjectSelect').value;
+    const isSingleSubjectMode = selectedSubject !== 'all';
+    
+    // 如果是单科模式，限制subjects只包含选中的科目
+    const displaySubjects = isSingleSubjectMode ? [selectedSubject] : subjects;
+    
+    // 设置单科/全部科目模式的HTML类名标识
+    const modeClass = isSingleSubjectMode ? 'single-subject-mode' : 'all-subjects-mode';
+    
+    // 雷达图提示文字
+    const radarChartNote = isSingleSubjectMode ? 
+        '<div class="chart-note">注意：选择全部科目时才会显示成绩雷达图</div>' : '';
+    
     analysisResult.innerHTML = `
         <h3 class="detail-title">${studentData.name} - 成绩详情分析</h3>
-        <div class="detail-analysis-container">
+        <div class="detail-analysis-container ${modeClass}">
             <div class="detail-summary">
                 <div class="student-info">
                     <p><strong>学号:</strong> ${studentId}</p>
@@ -2005,14 +2014,16 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
             <div class="subjects-detail">
                 <h4>各科成绩详情</h4>
                 <div class="subject-cards">
-                    ${generateSubjectCards(studentData, subjects, classAvgScores, maxScores, fileData.data.students)}
+                    ${generateSubjectCards(studentData, displaySubjects, classAvgScores, maxScores, fileData.data.students)}
                 </div>
             </div>
             <div id="detailChartsContainer" class="detail-charts-container">
+                ${!isSingleSubjectMode ? `
                 <div id="radarChartContainer" class="chart-container">
                     <h4>成绩雷达图</h4>
                     <canvas id="radarChart"></canvas>
                 </div>
+                ` : radarChartNote}
                 <div id="barChartContainer" class="chart-container">
                     <h4>与班级平均分对比</h4>
                     <canvas id="barChart"></canvas>
@@ -2023,8 +2034,11 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
     
     // 渲染图表
     setTimeout(() => {
-        renderRadarChart(studentData, subjects, classAvgScores, maxScores);
-        renderBarChart(studentData, subjects, classAvgScores);
+        // 仅在全部科目模式下渲染雷达图
+        if (!isSingleSubjectMode) {
+            renderRadarChart(studentData, subjects, classAvgScores, maxScores);
+        }
+        renderBarChart(studentData, displaySubjects, classAvgScores);
     }, 100);
 }
 
@@ -2113,10 +2127,7 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
                     pointBackgroundColor: 'rgba(54, 162, 235, 1)',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
-                    datalabels: {
-                        offset: context => offsetConfigs.student[context.dataIndex] || 0
-                    }
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
                 },
                 {
                     label: '班级平均',
@@ -2126,10 +2137,7 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
                     pointBackgroundColor: 'rgba(255, 99, 132, 1)',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
-                    datalabels: {
-                        offset: context => offsetConfigs.class[context.dataIndex] || 0
-                    }
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
                 }
             ]
         },
@@ -2147,24 +2155,24 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
                         display: true
                     },
                     suggestedMin: 0,
-                    suggestedMax: 100
+                    suggestedMax: 100,
+                    ticks: {
+                        stepSize: 20
+                    }
                 }
             },
             plugins: {
                 datalabels: {
-                    display: true,
-                    color: 'rgba(0, 0, 0, 0.8)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                    borderRadius: 3,
-                    padding: 2,
-                    font: {
-                        weight: 'bold',
-                        size: 10
-                    },
-                    formatter: function(value) {
-                        return value + '%';
-                    },
-                    align: 'end'
+                    display: false // 不显示数据标签
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.raw || 0;
+                            return `${label}: ${value}%`;
+                        }
+                    }
                 }
             }
         }
