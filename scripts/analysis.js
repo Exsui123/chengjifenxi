@@ -51,16 +51,19 @@ function initAnalysisModule() {
                 // 基本指标分析，无需额外选项
                 // 这里可以直接执行基本分析或显示配置选项
                 console.log('选择了基本指标分析');
+                clearAnalysisResult();
                 break;
             case 'personal-detail':
                 // 显示个人成绩详情分析选项
                 console.log('选择了个人成绩详情分析');
                 showDetailAnalysisOptions();
+                clearAnalysisResult();
                 break;
             case 'personal-trend':
                 // 显示个人趋势分析选项
                 console.log('选择了个人趋势分析');
                 showTrendAnalysisOptions();
+                clearAnalysisResult();
                 break;
             default:
                 // 没有选择任何分析类型
@@ -1127,11 +1130,39 @@ function getSubjectColumns(headers) {
 function clearAnalysisResult() {
     const analysisResult = document.getElementById('analysisResult');
     if (analysisResult) {
-        analysisResult.innerHTML = `
-            <div class="empty-analysis-result">
-                <p>请选择分析类型并设置相关参数后点击生成按钮</p>
-            </div>
-        `;
+        const selectedValue = document.getElementById('analysisTypeSelect')?.value;
+        
+        if (selectedValue === 'personal-detail') {
+            analysisResult.innerHTML = `
+                <div class="empty-analysis">
+                    <p>个人成绩详情分析</p>
+                    <ol class="analysis-steps">
+                        <li>请先从下拉框中选择一个成绩表</li>
+                        <li>然后选择要分析的学生</li>
+                        <li>选择要分析的科目（可选所有科目）</li>
+                        <li>点击"生成详情图"按钮查看分析结果</li>
+                    </ol>
+                </div>
+            `;
+        } else if (selectedValue === 'personal-trend') {
+            analysisResult.innerHTML = `
+                <div class="empty-analysis">
+                    <p>个人成绩趋势分析</p>
+                    <ol class="analysis-steps">
+                        <li>请先从下拉框中选择多个成绩表</li>
+                        <li>然后选择要分析的科目</li>
+                        <li>选择要分析的学生</li>
+                        <li>点击"生成趋势图"按钮查看分析结果</li>
+                    </ol>
+                </div>
+            `;
+        } else {
+            analysisResult.innerHTML = `
+                <div class="empty-analysis">
+                    <p>请选择分析类型</p>
+                </div>
+            `;
+        }
     }
 }
 
@@ -1211,6 +1242,72 @@ function findStudentIdColumn(filesData) {
 }
 
 /**
+ * 查找班级列的索引
+ * @param {Array} filesData - 所有文件的数据
+ * @returns {number} 列索引，若未找到则返回-1
+ */
+function findClassColumn(filesData) {
+    const classKeywords = ['班级', '班号', 'class'];
+    console.log('开始查找班级列, 关键词:', classKeywords);
+    
+    for (const fileData of filesData) {
+        console.log(`检查文件 ${fileData.id} 的表头`);
+        
+        if (!fileData.data || !fileData.data.length) {
+            console.warn(`文件 ${fileData.id} 无数据`);
+            continue;
+        }
+        
+        const headers = fileData.data[0];
+        
+        // 尝试查找包含关键词的列
+        for (let i = 0; i < headers.length; i++) {
+            const header = String(headers[i] || '').toLowerCase();
+            console.log(`检查列 ${i}: ${header}`);
+            
+            if (classKeywords.some(keyword => header.includes(keyword.toLowerCase()))) {
+                console.log(`找到班级列: ${i}, 列名: ${headers[i]}`);
+                return i;
+            }
+        }
+    }
+    
+    console.log('未找到班级列');
+    return -1;
+}
+
+/**
+ * 获取文件中的班级信息
+ * @param {Object} fileData - 文件数据
+ * @returns {string} 班级名称，若未找到则返回undefined
+ */
+function getClassNameFromFile(fileData) {
+    // 如果文件已经有记录的班级信息，直接返回
+    if (fileData.class) {
+        return fileData.class;
+    }
+    
+    // 如果新格式数据已经有班级信息，直接返回
+    if (fileData.data && fileData.data.className) {
+        return fileData.data.className;
+    }
+    
+    // 从表头中查找班级列
+    if (Array.isArray(fileData.data) && fileData.data.length > 0) {
+        const classColumnIndex = findClassColumn([fileData]);
+        if (classColumnIndex !== -1 && fileData.data.length > 1) {
+            // 获取第一个学生的班级作为整个文件的班级
+            const firstStudentRow = fileData.data[1];
+            if (firstStudentRow && firstStudentRow.length > classColumnIndex) {
+                return firstStudentRow[classColumnIndex];
+            }
+        }
+    }
+    
+    return undefined;
+}
+
+/**
  * 显示详情分析选项
  */
 function showDetailAnalysisOptions() {
@@ -1220,6 +1317,14 @@ function showDetailAnalysisOptions() {
         
         // 加载所有文件
         loadAllFiles();
+        
+        // 清空已选文件和学生、科目下拉框
+        selectedFileIds = [];
+        
+        // 更新文件列表和学生选择器
+        updateDetailSelectedFilesList();
+        updateDetailStudentOptions();
+        updateDetailSubjectOptions();
         
         // 清空分析结果区域
         clearAnalysisResult();
@@ -1258,50 +1363,64 @@ function loadDetailFileDropdownItems() {
     
     // 如果没有文件，显示提示
     if (allFilesCache.length === 0) {
-        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
+        dropdownMenu.innerHTML = '<div class="dropdown-item no-files">暂无数据文件</div>';
         return;
     }
     
     // 添加文件选项
     allFilesCache.forEach(file => {
-        const isSelected = selectedFileIds.includes(file.id);
-        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
-        
-        // 格式化日期
-        const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
-        
         const item = document.createElement('div');
-        item.className = itemClass;
-        item.dataset.fileId = file.id;
+        item.classList.add('dropdown-item');
+        
+        // 如果文件已被选择，添加选中样式
+        if (selectedFileIds.includes(file.id)) {
+            item.classList.add('selected');
+        }
+        
+        const dateStr = file.date ? new Date(file.date).toLocaleDateString() : '无日期';
         
         item.innerHTML = `
             <div class="checkbox-indicator"></div>
-            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
+            <div class="dropdown-item-text">
+                <strong>${file.name || '未命名文件'}</strong>
+                <div>${dateStr} - ${file.className || '未知班级'}</div>
+            </div>
         `;
         
-        // 添加点击事件
+        // 点击选择文件
         item.addEventListener('click', function() {
-            const fileId = this.dataset.fileId;
+            console.log('选择文件:', file.id, file.name);
             
-            // 详情分析只允许选择一个文件
-            // 清除所有选中状态
-            selectedFileIds = [];
-            dropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
-                item.classList.remove('selected');
-            });
+            // 清除所有其他选择
+            dropdownMenu.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('selected'));
             
-            // 选择当前文件
-            selectedFileIds.push(fileId);
+            // 添加选中状态
             this.classList.add('selected');
             
-            // 更新已选文件列表
+            // 保存已选择的文件
+            selectedFileIds = [file.id];
+            
+            // 更新下拉框显示文本
+            const selectedText = document.querySelector('.detail-selected-text');
+            if (selectedText) {
+                selectedText.textContent = file.name || '未命名文件';
+            }
+            
+            // 更新已选文件列表显示
             updateDetailSelectedFilesList();
             
-            // 更新学生选择列表
-            updateDetailStudentOptions();
+            // 载入并更新学生和科目选择
+            console.log('更新学生和科目选择');
             
-            // 更新生成按钮状态
-            updateGenerateDetailButtonState();
+            setTimeout(() => {
+                // 确保选择的文件中有学生数据
+                const selectedFile = getFileById(file.id);
+                if (selectedFile && selectedFile.data) {
+                    console.log('获取到文件数据，准备更新学生选择');
+                    updateDetailStudentOptions();
+                    updateDetailSubjectOptions();
+                }
+            }, 0);
         });
         
         dropdownMenu.appendChild(item);
@@ -1542,7 +1661,36 @@ function getSubjectsFromFile(fileData) {
         const subjects = Object.keys(firstStudent.scores);
         console.log('从学生scores对象中提取的科目:', subjects);
         return subjects;
-    } else if (Array.isArray(fileData.data) && fileData.data.length > 0) {
+    }
+    // 检查是否有rawData字段（转换后的旧数据）
+    else if (fileData.data.rawData && Array.isArray(fileData.data.rawData) && fileData.data.rawData.length > 0) {
+        console.log('使用转换后的旧数据格式（rawData）提取科目');
+        // 旧格式：从表头（第一行）中提取科目
+        const headers = fileData.data.rawData[0];
+        const nonSubjectColumns = ['姓名', '学号', '班级', '序号', 'id', 'name', 'class', 'student', 'student_id', 'studentid'];
+        
+        // 找出所有不是学生信息的列
+        const subjects = [];
+        for (let i = 0; i < headers.length; i++) {
+            const header = headers[i];
+            if (header && typeof header === 'string') {
+                // 检查是否是非科目列
+                const isNonSubject = nonSubjectColumns.some(keyword => 
+                    header.toLowerCase().includes(keyword.toLowerCase())
+                );
+                
+                // 如果不是非科目列，则添加到科目集合中
+                if (!isNonSubject) {
+                    subjects.push(header);
+                }
+            }
+        }
+        
+        console.log('从表头提取的科目:', subjects);
+        return subjects;
+    }
+    // 原始的旧格式数据（二维数组）
+    else if (Array.isArray(fileData.data) && fileData.data.length > 0) {
         console.log('使用旧数据格式（二维数组）提取科目');
         // 旧格式：从表头（第一行）中提取科目
         const headers = fileData.data[0];
@@ -1614,6 +1762,13 @@ function performDetailAnalysis() {
         const detailFileId = selectedFileIds[0];
         console.log('选择的文件ID:', detailFileId);
         
+        // 检查学生下拉框是否有内容
+        if (studentSelect.options.length <= 1) {
+            showToast('请先选择包含学生数据的成绩表', 'error');
+            console.error('学生下拉框没有选项');
+            return;
+        }
+        
         // 获取选择的科目
         const subjectSelect = document.getElementById('detailSubjectSelect');
         const selectedSubject = subjectSelect ? subjectSelect.value : 'all';
@@ -1636,6 +1791,27 @@ function performDetailAnalysis() {
             return;
         }
         
+        // 获取班级信息
+        const className = getClassNameFromFile(fileData);
+        console.log('获取到的班级信息:', className);
+        
+        // 确保fileData.data有正确的结构
+        if (!fileData.data.students && !fileData.data.className) {
+            // 如果是旧结构（二维数组），转换为新结构
+            if (Array.isArray(fileData.data)) {
+                const rawData = [...fileData.data];
+                fileData.data = {
+                    rawData: rawData,
+                    className: className || '未知班级'
+                };
+            } else {
+                // 确保至少有className字段
+                fileData.data.className = className || '未知班级';
+            }
+        } else if (!fileData.data.className) {
+            fileData.data.className = className || '未知班级';
+        }
+        
         // 根据文件数据格式处理
         let studentsData = [];
         let studentData = null;
@@ -1647,12 +1823,13 @@ function performDetailAnalysis() {
             studentData = studentsData.find(student => student.id === selectedStudent);
         } 
         // 处理旧格式数据（二维数组）
-        else if (Array.isArray(fileData.data) && fileData.data.length > 1) {
+        else if (fileData.data.rawData && Array.isArray(fileData.data.rawData) && fileData.data.rawData.length > 1) {
             console.log('使用旧格式数据处理（二维数组）');
             
             // 查找学生姓名列和ID列
-            const headers = fileData.data[0];
-            const studentNameColumnIndex = findStudentNameColumn([fileData]);
+            const headers = fileData.data.rawData[0];
+            const studentNameColumnIndex = findStudentNameColumn([{ id: fileData.id, data: fileData.data.rawData }]);
+            const studentIdColumn = findStudentIdColumn([{ id: fileData.id, data: fileData.data.rawData }]);
             
             if (studentNameColumnIndex === -1) {
                 showToast('无法识别学生信息列', 'error');
@@ -1661,16 +1838,41 @@ function performDetailAnalysis() {
             }
             
             // 找到学生行
-            const studentRow = fileData.data.find((row, index) => 
-                index > 0 && row[studentNameColumnIndex] && 
-                (row[studentNameColumnIndex] === selectedStudent || row[studentNameColumnIndex] + '_' + row[studentNameColumnIndex] === selectedStudent)
-            );
+            let studentRowFound = false;
+            let studentRow = null;
             
-            if (!studentRow) {
-                showToast('找不到所选学生数据', 'error');
-                console.error('找不到所选学生行');
+            console.log('开始查找学生行，选择的学生ID:', selectedStudent);
+            console.log('按以下条件查找学生行：');
+            console.log('- 学生姓名列索引:', studentNameColumnIndex);
+            console.log('- 学生ID列索引:', studentIdColumn);
+            
+            // 遍历所有行进行查找
+            for (let i = 1; i < fileData.data.rawData.length; i++) {
+                const row = fileData.data.rawData[i];
+                if (!row || !row[studentNameColumnIndex]) continue;
+                
+                const rowStudentName = row[studentNameColumnIndex];
+                const rowStudentId = studentIdColumn !== -1 && row.length > studentIdColumn ? 
+                    `${rowStudentName}_${row[studentIdColumn]}` : rowStudentName;
+                
+                console.log(`行 ${i} - 学生: ${rowStudentName}, ID: ${rowStudentId}`);
+                
+                // 检查是否匹配所选学生ID
+                if (rowStudentId === selectedStudent || rowStudentName === selectedStudent) {
+                    console.log('找到匹配的学生行!');
+                    studentRow = row;
+                    studentRowFound = true;
+                    break;
+                }
+            }
+            
+            if (!studentRowFound) {
+                showToast('找不到所选学生数据，请检查学生选择', 'error');
+                console.error('找不到所选学生行，选择的学生ID:', selectedStudent);
                 return;
             }
+            
+            console.log('找到的学生行数据:', studentRow);
             
             // 从行数据生成学生对象
             studentData = {
@@ -1690,12 +1892,16 @@ function performDetailAnalysis() {
             
             // 将所有学生数据转换为新格式
             studentsData = [];
-            for (let i = 1; i < fileData.data.length; i++) {
-                const row = fileData.data[i];
+            for (let i = 1; i < fileData.data.rawData.length; i++) {
+                const row = fileData.data.rawData[i];
                 if (row && row.length > studentNameColumnIndex) {
+                    const rowStudentName = row[studentNameColumnIndex];
+                    const rowStudentId = studentIdColumn !== -1 && row.length > studentIdColumn ? 
+                        `${rowStudentName}_${row[studentIdColumn]}` : rowStudentName;
+                    
                     const student = {
-                        id: row[studentNameColumnIndex],
-                        name: row[studentNameColumnIndex],
+                        id: rowStudentId,
+                        name: rowStudentName,
                         scores: {}
                     };
                     
@@ -1774,13 +1980,19 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
     const classAvgScores = calculateClassAverageScores(fileData.data.students, subjects);
     const maxScores = calculateMaxScores(fileData.data.students, subjects);
     
+    // 提取学号（如果是姓名_学号格式，则只取学号部分）
+    let studentId = studentData.id;
+    if (studentId.includes('_')) {
+        studentId = studentId.split('_')[1];
+    }
+    
     // 清空结果区域并添加标题
     analysisResult.innerHTML = `
         <h3 class="detail-title">${studentData.name} - 成绩详情分析</h3>
         <div class="detail-analysis-container">
             <div class="detail-summary">
                 <div class="student-info">
-                    <p><strong>学号:</strong> ${studentData.id}</p>
+                    <p><strong>学号:</strong> ${studentId}</p>
                     <p><strong>班级:</strong> ${fileData.data.className || '未知班级'}</p>
                     <p><strong>考试:</strong> ${fileData.name}</p>
                 </div>
@@ -1879,11 +2091,14 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
     const classAvgScoresList = subjects.map(subject => classAvgScores[subject] || 0);
     const maxScoresList = subjects.map(subject => maxScores[subject] || 100);
     
-    // 计算分数转换为百分比（相对于每科满分）
+    // 计算分数转换为百分比（相对于每科满分）并保留一位小数
     const studentScoresPercentage = studentScores.map((score, index) => 
-        (score / maxScoresList[index]) * 100);
+        parseFloat(((score / maxScoresList[index]) * 100).toFixed(1)));
     const classAvgScoresPercentage = classAvgScoresList.map((score, index) => 
-        (score / maxScoresList[index]) * 100);
+        parseFloat(((score / maxScoresList[index]) * 100).toFixed(1)));
+    
+    // 检查各科数据是否重叠，生成标签偏移配置
+    const offsetConfigs = generateOffsetConfigs(studentScoresPercentage, classAvgScoresPercentage, subjects);
     
     new Chart(ctx, {
         type: 'radar',
@@ -1898,7 +2113,10 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
                     pointBackgroundColor: 'rgba(54, 162, 235, 1)',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
+                    datalabels: {
+                        offset: context => offsetConfigs.student[context.dataIndex] || 0
+                    }
                 },
                 {
                     label: '班级平均',
@@ -1908,7 +2126,10 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
                     pointBackgroundColor: 'rgba(255, 99, 132, 1)',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
+                    datalabels: {
+                        offset: context => offsetConfigs.class[context.dataIndex] || 0
+                    }
                 }
             ]
         },
@@ -1928,9 +2149,63 @@ function renderRadarChart(studentData, subjects, classAvgScores, maxScores) {
                     suggestedMin: 0,
                     suggestedMax: 100
                 }
+            },
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    borderRadius: 3,
+                    padding: 2,
+                    font: {
+                        weight: 'bold',
+                        size: 10
+                    },
+                    formatter: function(value) {
+                        return value + '%';
+                    },
+                    align: 'end'
+                }
             }
         }
     });
+}
+
+/**
+ * 生成雷达图标签偏移配置，避免数字重叠
+ * @param {Array} studentScores 学生成绩数组
+ * @param {Array} classScores 班级平均成绩数组
+ * @param {Array} subjects 科目数组
+ * @returns {Object} 包含学生和班级标签偏移配置的对象
+ */
+function generateOffsetConfigs(studentScores, classScores, subjects) {
+    const offsetThreshold = 5; // 分数差小于这个值时进行偏移
+    const offsetValue = 12; // 偏移像素值
+    
+    const offsetConfigs = {
+        student: {},
+        class: {}
+    };
+    
+    for (let i = 0; i < subjects.length; i++) {
+        const studentScore = studentScores[i];
+        const classScore = classScores[i];
+        
+        // 检查两个数值是否接近
+        if (Math.abs(studentScore - classScore) < offsetThreshold) {
+            // 如果学生分数大于等于班级平均分，向外偏移学生分数
+            if (studentScore >= classScore) {
+                offsetConfigs.student[i] = offsetValue;
+                offsetConfigs.class[i] = -offsetValue;
+            } else {
+                // 否则向外偏移班级平均分
+                offsetConfigs.student[i] = -offsetValue;
+                offsetConfigs.class[i] = offsetValue;
+            }
+        }
+    }
+    
+    return offsetConfigs;
 }
 
 /**
@@ -2071,16 +2346,19 @@ function initAnalysisTypeSelector() {
                 // 基本指标分析，无需额外选项
                 // 这里可以直接执行基本分析或显示配置选项
                 console.log('选择了基本指标分析');
+                clearAnalysisResult();
                 break;
             case 'personal-detail':
                 // 显示个人成绩详情分析选项
                 console.log('选择了个人成绩详情分析');
                 showDetailAnalysisOptions();
+                clearAnalysisResult();
                 break;
             case 'personal-trend':
                 // 显示个人趋势分析选项
                 console.log('选择了个人趋势分析');
                 showTrendAnalysisOptions();
+                clearAnalysisResult();
                 break;
             default:
                 // 没有选择任何分析类型
