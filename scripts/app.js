@@ -43,6 +43,23 @@ function initNavigation() {
             const targetSection = document.getElementById(targetSectionId);
             if (targetSection) {
                 targetSection.classList.add('active');
+                
+                // 如果导航到数据分析页面，确保文件数据已加载
+                if (targetSectionId === 'analysis-section') {
+                    // 确保分析模块中的文件数据加载函数已定义
+                    if (typeof loadAllFiles === 'function') {
+                        console.log('导航到数据分析页面，确保加载文件数据');
+                        loadAllFiles();
+                        
+                        // 如果存在分析类型选择，初始化它
+                        const analysisTypeSelect = document.getElementById('analysisTypeSelect');
+                        if (analysisTypeSelect && analysisTypeSelect.value) {
+                            // 触发change事件，以显示正确的分析选项
+                            const event = new Event('change');
+                            analysisTypeSelect.dispatchEvent(event);
+                        }
+                    }
+                }
             }
         });
     });

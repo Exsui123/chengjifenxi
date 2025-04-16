@@ -40,6 +40,9 @@ function initAnalysisModule() {
     // 如果元素不存在，表示不在分析页面，直接返回
     if (!analysisTypeSelect) return;
     
+    // 立即加载所有文件数据到缓存中
+    loadAllFiles();
+    
     // 分析类型选择变化事件
     analysisTypeSelect.addEventListener('change', function() {
         const selectedValue = this.value;
@@ -71,6 +74,12 @@ function initAnalysisModule() {
                 // 显示班级分数等级占比分析选项
                 console.log('选择了班级分数等级占比分析');
                 showClassLevelProportionOptions();
+                clearAnalysisResult();
+                break;
+            case 'class-average-trend':
+                // 显示班级平均分变化趋势分析选项
+                console.log('选择了班级平均分变化趋势分析');
+                showClassAverageTrendOptions();
                 clearAnalysisResult();
                 break;
             default:
@@ -158,13 +167,19 @@ function initAnalysisModule() {
  */
 function initCustomDropdown() {
     // 初始化趋势分析下拉框
-    initDropdown('.dropdown-selected:not(.detail-dropdown-selected):not(.basic-dropdown-selected)', 'fileDropdownMenu');
+    initDropdown('.dropdown-selected:not(.detail-dropdown-selected):not(.basic-dropdown-selected):not(.average-dropdown-selected)', 'fileDropdownMenu');
     
     // 初始化详情分析下拉框
     initDropdown('.detail-dropdown-selected', 'detailFileDropdownMenu');
     
     // 初始化基础指标分析下拉框
     initDropdown('.basic-dropdown-selected', 'basicFileDropdownMenu');
+    
+    // 初始化班级平均分变化趋势分析下拉框
+    initDropdown('.average-dropdown-selected', 'averageFileDropdownMenu');
+    
+    // 加载所有文件数据到缓存中
+    loadAllFiles();
 }
 
 /**
@@ -180,9 +195,16 @@ function initDropdown(dropdownSelector, menuId) {
     
     // 获取下拉框所在的父容器，用于判断是哪种类型的分析
     const isDetailAnalysis = menuId === 'detailFileDropdownMenu';
+    const isBasicAnalysis = menuId === 'basicFileDropdownMenu';
+    const isAverageAnalysis = menuId === 'averageFileDropdownMenu';
     
-    // 点击下拉框切换显示/隐藏菜单
-    dropdownSelected.addEventListener('click', function(e) {
+    // 移除现有的事件监听器（如果有标记）
+    if (dropdownSelected._hasClickListener) {
+        dropdownSelected.removeEventListener('click', dropdownSelected._clickHandler);
+    }
+    
+    // 定义点击处理函数
+    dropdownSelected._clickHandler = function(e) {
         e.stopPropagation();
         const dropdown = this.closest('.custom-dropdown');
         if (!dropdown) return;
@@ -191,27 +213,49 @@ function initDropdown(dropdownSelector, menuId) {
         
         // 如果打开下拉菜单，加载文件选项
         if (dropdown.classList.contains('open')) {
+            // 确保文件数据已加载
+            if (allFilesCache.length === 0) {
+                loadAllFiles();
+            }
+            
+            // 根据不同类型的分析加载不同的文件选项
             if (isDetailAnalysis) {
                 loadDetailFileDropdownItems();
+            } else if (isBasicAnalysis) {
+                loadBasicFileDropdownItems();
+            } else if (isAverageAnalysis) {
+                loadAverageFileDropdownItems();
             } else {
                 loadFileDropdownItems();
             }
         }
-    });
+    };
     
-    // 点击页面其他区域关闭下拉菜单
-    document.addEventListener('click', function() {
-        const dropdown = dropdownSelected.closest('.custom-dropdown');
-        if (dropdown) {
-            dropdown.classList.remove('open');
-        }
-    });
+    // 添加点击事件监听器并标记
+    dropdownSelected.addEventListener('click', dropdownSelected._clickHandler);
+    dropdownSelected._hasClickListener = true;
+    
+    // 如果已经绑定过全局点击事件，则不再绑定
+    if (!window._hasDocumentClickListener) {
+        // 点击页面其他区域关闭下拉菜单
+        document.addEventListener('click', function() {
+            const dropdowns = document.querySelectorAll('.custom-dropdown');
+            dropdowns.forEach(dropdown => {
+                dropdown.classList.remove('open');
+            });
+        });
+        
+        // 标记已绑定全局点击事件
+        window._hasDocumentClickListener = true;
+    }
     
     // 阻止点击下拉菜单时关闭
-    if (dropdownMenu) {
-        dropdownMenu.addEventListener('click', function(e) {
+    if (dropdownMenu && !dropdownMenu._hasClickListener) {
+        dropdownMenu._clickHandler = function(e) {
             e.stopPropagation();
-        });
+        };
+        dropdownMenu.addEventListener('click', dropdownMenu._clickHandler);
+        dropdownMenu._hasClickListener = true;
     }
 }
 
@@ -1411,7 +1455,7 @@ function loadDetailFileDropdownItems() {
             <div class="checkbox-indicator"></div>
             <div class="dropdown-item-text">
                 <strong>${file.name || '未命名文件'}</strong>
-                <div>${dateStr} - ${file.className || '未知班级'}</div>
+                <div>${dateStr} - ${file.class || '未知班级'}</div>
             </div>
         `;
         
@@ -2402,6 +2446,12 @@ function initAnalysisTypeSelector() {
                 showClassLevelProportionOptions();
                 clearAnalysisResult();
                 break;
+            case 'class-average-trend':
+                // 显示班级平均分变化趋势分析选项
+                console.log('选择了班级平均分变化趋势分析');
+                showClassAverageTrendOptions();
+                clearAnalysisResult();
+                break;
             default:
                 // 没有选择任何分析类型
                 console.log('未选择分析类型');
@@ -2419,6 +2469,7 @@ function hideAllAnalysisOptions() {
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
     hideLevelProportionOptions();
+    hideClassAverageTrendOptions();
 }
 
 /**
@@ -2573,59 +2624,47 @@ function loadBasicFileDropdownItems() {
     // 清空现有选项
     dropdownMenu.innerHTML = '';
     
-    // 如果没有文件数据
+    // 如果没有文件，显示提示
     if (allFilesCache.length === 0) {
-        const emptyItem = document.createElement('div');
-        emptyItem.className = 'dropdown-item';
-        emptyItem.textContent = '没有可用的成绩表文件';
-        dropdownMenu.appendChild(emptyItem);
+        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
         return;
     }
     
-    // 为每个文件创建选项
+    // 添加文件选项
     allFilesCache.forEach(file => {
-        const item = document.createElement('div');
-        item.className = 'dropdown-item';
-        
-        // 检查该文件是否已经被选中
         const isSelected = selectedFileIds.includes(file.id);
-        if (isSelected) {
-            item.classList.add('selected');
-        }
+        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
         
-        // 创建自定义复选框
-        const checkbox = document.createElement('div');
-        checkbox.className = 'checkbox-indicator';
+        // 格式化日期
+        const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
         
-        const text = document.createElement('div');
-        text.className = 'dropdown-item-text';
+        const item = document.createElement('div');
+        item.className = itemClass;
+        item.dataset.fileId = file.id;
         
-        // 格式化日期显示
-        let dateDisplay = file.date ? new Date(file.date).toLocaleDateString() : '未知日期';
+        item.innerHTML = `
+            <div class="checkbox-indicator"></div>
+            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
+        `;
         
-        text.textContent = `${file.name || '未命名'} (${dateDisplay})`;
-        
-        item.appendChild(checkbox);
-        item.appendChild(text);
-        
-        // 单项选择
-        item.addEventListener('click', function(e) {
-            e.stopPropagation();
+        // 添加点击事件
+        item.addEventListener('click', function() {
+            const fileId = this.dataset.fileId;
             
-            // 清除之前的所有选择
-            selectedFileIds = [];
-            document.querySelectorAll('#basicFileDropdownMenu .dropdown-item').forEach(i => {
-                i.classList.remove('selected');
-            });
+            if (selectedFileIds.includes(fileId)) {
+                // 取消选择
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+                this.classList.remove('selected');
+            } else {
+                // 选择文件
+                selectedFileIds.push(fileId);
+                this.classList.add('selected');
+            }
             
-            // 选中当前项
-            this.classList.add('selected');
-            selectedFileIds.push(file.id);
-            
-            // 更新已选择文件列表显示
+            // 更新已选文件列表
             updateBasicSelectedFilesList();
             
-            // 更新科目选择下拉框
+            // 更新科目选择列表
             updateBasicSubjectOptions();
             
             // 更新生成按钮状态
@@ -2994,6 +3033,7 @@ function hideAllAnalysisOptions() {
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
     hideLevelProportionOptions();
+    hideClassAverageTrendOptions();
 }
 
 /**
@@ -3468,4 +3508,632 @@ function generateLevelProportionAnalysisResult(fileData, subject, thresholds) {
         </div>
     `;
     resultArea.appendChild(statsElement);
-} 
+}
+
+/**
+ * 显示班级平均分变化趋势分析选项
+ */
+function showClassAverageTrendOptions() {
+    const averageTrendOptions = document.getElementById('classAverageTrendOptions');
+    if (averageTrendOptions) {
+        averageTrendOptions.style.display = 'block';
+        
+        // 记录当前分析类型
+        selectedAnalysisType = 'class-average-trend';
+        
+        // 加载所有文件
+        loadAllFiles();
+        
+        // 初始化科目下拉框
+        const subjectSelect = document.getElementById('averageSubjectSelect');
+        if (subjectSelect) {
+            subjectSelect.addEventListener('change', function() {
+                updateGenerateAverageTrendButtonState();
+            });
+        }
+        
+        // 生成按钮点击事件
+        const generateBtn = document.getElementById('generateAverageTrendBtn');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', function() {
+                if (selectedFileIds.length > 0) {
+                    performClassAverageTrendAnalysis();
+                }
+            });
+        }
+        
+        // 清空分析结果区域
+        clearAnalysisResult();
+    }
+}
+
+/**
+ * 隐藏班级平均分变化趋势分析选项
+ */
+function hideClassAverageTrendOptions() {
+    const averageTrendOptions = document.getElementById('classAverageTrendOptions');
+    if (averageTrendOptions) {
+        averageTrendOptions.style.display = 'none';
+    }
+}
+
+/**
+ * 加载班级平均分变化趋势分析的文件下拉框选项
+ */
+function loadAverageFileDropdownItems() {
+    const dropdownMenu = document.getElementById('averageFileDropdownMenu');
+    if (!dropdownMenu) return;
+    
+    // 清空下拉菜单
+    dropdownMenu.innerHTML = '';
+    
+    // 如果没有文件，显示提示
+    if (allFilesCache.length === 0) {
+        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
+        return;
+    }
+    
+    // 为每个文件创建下拉选项
+    allFilesCache.forEach(file => {
+        const isSelected = selectedFileIds.includes(file.id);
+        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
+        
+        // 格式化日期
+        const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
+        
+        const item = document.createElement('div');
+        item.className = itemClass;
+        item.dataset.fileId = file.id;
+        
+        item.innerHTML = `
+            <div class="checkbox-indicator"></div>
+            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
+        `;
+        
+        // 添加点击事件
+        item.addEventListener('click', function() {
+            const fileId = this.dataset.fileId;
+            
+            if (selectedFileIds.includes(fileId)) {
+                // 取消选择
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+                this.classList.remove('selected');
+            } else {
+                // 选择文件
+                selectedFileIds.push(fileId);
+                this.classList.add('selected');
+            }
+            
+            // 更新已选文件列表
+            updateAverageSelectedFilesList();
+            
+            // 更新科目选择列表
+            updateAverageSubjectOptions();
+            
+            // 更新生成按钮状态
+            updateGenerateAverageTrendButtonState();
+        });
+        
+        dropdownMenu.appendChild(item);
+    });
+}
+
+/**
+ * 更新班级平均分变化趋势分析已选择的文件列表
+ */
+function updateAverageSelectedFilesList() {
+    const selectedFilesList = document.getElementById('averageSelectedFilesList');
+    if (!selectedFilesList) return;
+    
+    // 清空列表
+    selectedFilesList.innerHTML = '';
+    
+    // 如果没有选中的文件，显示提示
+    if (selectedFileIds.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'empty-selected';
+        emptyDiv.textContent = '未选择任何成绩表';
+        selectedFilesList.appendChild(emptyDiv);
+        return;
+    }
+    
+    // 为每个选中的文件创建显示项
+    selectedFileIds.forEach(fileId => {
+        // 查找文件信息
+        const file = allFilesCache.find(f => f.id === fileId);
+        if (!file) return;
+        
+        // 创建文件显示项
+        const fileItem = document.createElement('div');
+        fileItem.className = 'selected-file-item';
+        
+        // 文件名称
+        const fileName = document.createElement('span');
+        fileName.textContent = `${file.name} (${file.date || '未知日期'})`;
+        
+        // 删除按钮
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'remove-file-btn';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.title = '移除文件';
+        
+        // 添加删除按钮点击事件
+        deleteBtn.addEventListener('click', function() {
+            // 从选中列表中移除
+            const index = selectedFileIds.indexOf(fileId);
+            if (index !== -1) {
+                selectedFileIds.splice(index, 1);
+            }
+            
+            // 更新显示
+            updateAverageSelectedFilesList();
+            
+            // 更新下拉菜单选中状态
+            const dropdownItem = document.querySelector(`.dropdown-item[data-file-id="${fileId}"]`);
+            if (dropdownItem) {
+                dropdownItem.classList.remove('selected');
+                const checkbox = dropdownItem.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.checked = false;
+                }
+            }
+            
+            // 更新科目选择下拉框
+            updateAverageSubjectOptions();
+            
+            // 更新生成按钮状态
+            updateGenerateAverageTrendButtonState();
+        });
+        
+        // 将文件名称和删除按钮添加到文件显示项
+        fileItem.appendChild(fileName);
+        fileItem.appendChild(deleteBtn);
+        
+        // 将文件显示项添加到列表
+        selectedFilesList.appendChild(fileItem);
+    });
+}
+
+/**
+ * 更新班级平均分变化趋势分析的科目选择下拉框
+ */
+function updateAverageSubjectOptions() {
+    const subjectSelect = document.getElementById('averageSubjectSelect');
+    if (!subjectSelect) return;
+    
+    // 如果没有选择文件，禁用科目选择
+    if (selectedFileIds.length === 0) {
+        subjectSelect.disabled = true;
+        subjectSelect.innerHTML = '<option value="">-- 请先选择成绩表 --</option>';
+        return;
+    }
+    
+    // 启用科目选择
+    subjectSelect.disabled = false;
+    
+    // 获取所有选中文件中的科目
+    const subjects = getSubjectsFromSelectedFiles();
+    
+    // 清空下拉框
+    subjectSelect.innerHTML = '';
+    
+    // 添加"全部科目"选项
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '全部科目';
+    subjectSelect.appendChild(allOption);
+    
+    // 为每个科目添加选项
+    subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+    });
+    
+    // 默认选择第一个选项
+    if (subjectSelect.options.length > 0) {
+        subjectSelect.selectedIndex = 0;
+    }
+    
+    // 更新生成按钮状态
+    updateGenerateAverageTrendButtonState();
+}
+
+/**
+ * 更新生成班级平均分变化趋势分析按钮状态
+ */
+function updateGenerateAverageTrendButtonState() {
+    const generateBtn = document.getElementById('generateAverageTrendBtn');
+    const subjectSelect = document.getElementById('averageSubjectSelect');
+    
+    if (!generateBtn || !subjectSelect) return;
+    
+    // 检查是否有文件被选择
+    const hasSelectedFiles = selectedFileIds.length > 0;
+    
+    // 检查是否选择了科目（如果科目下拉框已启用）
+    const hasSelectedSubject = !subjectSelect.disabled && subjectSelect.value !== '';
+    
+    // 如果同时满足文件和科目选择条件，启用按钮
+    generateBtn.disabled = !(hasSelectedFiles && hasSelectedSubject);
+}
+
+/**
+ * 执行班级平均分变化趋势分析
+ */
+function performClassAverageTrendAnalysis() {
+    // 获取选择的科目
+    const subjectSelect = document.getElementById('averageSubjectSelect');
+    const selectedSubject = subjectSelect ? subjectSelect.value : '';
+    
+    // 如果没有选择文件或科目，则返回
+    if (selectedFileIds.length === 0 || !selectedSubject) {
+        showToast('请先选择成绩表和科目', 'error');
+        return;
+    }
+    
+    // 获取所有选中文件的数据
+    const selectedFiles = [];
+    for (const fileId of selectedFileIds) {
+        const fileData = getFileById(fileId);
+        if (fileData) {
+            selectedFiles.push(fileData);
+        }
+    }
+    
+    // 如果没有有效的文件数据，显示错误提示
+    if (selectedFiles.length === 0) {
+        showToast('无法获取有效的文件数据', 'error');
+        return;
+    }
+    
+    // 生成班级平均分变化趋势分析结果
+    generateClassAverageTrendAnalysis(selectedFiles, selectedSubject);
+}
+
+/**
+ * 生成班级平均分变化趋势分析结果
+ * @param {Array} filesData - 文件数据数组
+ * @param {string} selectedSubject - 选择的科目
+ */
+function generateClassAverageTrendAnalysis(filesData, selectedSubject) {
+    // 清空分析结果区域
+    const analysisResult = document.getElementById('analysisResult');
+    if (!analysisResult) return;
+    
+    analysisResult.innerHTML = '';
+    
+    // 创建结果容器
+    const resultContainer = document.createElement('div');
+    resultContainer.className = 'class-average-trend-container';
+    
+    // 创建标题
+    const title = document.createElement('h3');
+    title.className = 'analysis-title';
+    title.textContent = '班级平均分变化趋势分析';
+    resultContainer.appendChild(title);
+    
+    // 按日期对文件排序
+    filesData.sort((a, b) => {
+        const dateA = new Date(a.date || 0);
+        const dateB = new Date(b.date || 0);
+        return dateA - dateB;
+    });
+    
+    // 如果选择了全部科目
+    if (selectedSubject === 'all') {
+        // 获取所有科目
+        const allSubjects = new Set();
+        filesData.forEach(fileData => {
+            const subjects = getSubjectsFromFile(fileData);
+            subjects.forEach(subject => allSubjects.add(subject));
+        });
+        
+        // 创建图表容器
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        
+        // 创建图表画布
+        const canvas = document.createElement('canvas');
+        canvas.id = 'averageTrendChart';
+        chartContainer.appendChild(canvas);
+        
+        // 将图表容器添加到结果容器
+        resultContainer.appendChild(chartContainer);
+        
+        // 生成图表数据
+        const labels = filesData.map(file => file.name || '未命名');
+        const datasets = [];
+        
+        // 为每个科目创建一个数据集
+        allSubjects.forEach(subject => {
+            const data = [];
+            const colors = getRandomColor();
+            
+            // 计算每个文件中该科目的平均分
+            filesData.forEach(fileData => {
+                // 获取科目列索引
+                const headers = fileData.data[0];
+                const subjectIndex = headers.findIndex(header => header === subject);
+                
+                // 如果找不到该科目，则添加null值
+                if (subjectIndex === -1) {
+                    data.push(null);
+                    return;
+                }
+                
+                // 计算该科目的平均分
+                let sum = 0;
+                let count = 0;
+                
+                for (let i = 1; i < fileData.data.length; i++) {
+                    const row = fileData.data[i];
+                    if (row[subjectIndex] !== undefined && row[subjectIndex] !== null && !isNaN(row[subjectIndex])) {
+                        sum += parseFloat(row[subjectIndex]);
+                        count++;
+                    }
+                }
+                
+                // 计算平均分
+                const average = count > 0 ? (sum / count).toFixed(2) : null;
+                data.push(average);
+            });
+            
+            // 创建数据集
+            datasets.push({
+                label: subject,
+                data: data,
+                borderColor: colors.borderColor,
+                backgroundColor: colors.backgroundColor,
+                borderWidth: 2,
+                pointBackgroundColor: colors.borderColor,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: false,
+                tension: 0.1
+            });
+        });
+        
+        // 绘制图表
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '平均分'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '考试'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '班级各科目平均分变化趋势',
+                        font: {
+                            size: 18
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#333',
+                        align: 'top',
+                        formatter: function(value) {
+                            return value;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 12
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        // 选择了单一科目
+        // 创建图表容器
+        const chartContainer = document.createElement('div');
+        chartContainer.className = 'chart-container';
+        
+        // 创建图表画布
+        const canvas = document.createElement('canvas');
+        canvas.id = 'singleSubjectAverageTrendChart';
+        chartContainer.appendChild(canvas);
+        
+        // 将图表容器添加到结果容器
+        resultContainer.appendChild(chartContainer);
+        
+        // 生成图表数据
+        const labels = filesData.map(file => file.name || '未命名');
+        const colors = getRandomColor();
+        const data = [];
+        
+        // 计算每个文件中选定科目的平均分
+        filesData.forEach(fileData => {
+            // 获取科目列索引
+            const headers = fileData.data[0];
+            const subjectIndex = headers.findIndex(header => header === selectedSubject);
+            
+            // 如果找不到该科目，则添加null值
+            if (subjectIndex === -1) {
+                data.push(null);
+                return;
+            }
+            
+            // 计算该科目的平均分
+            let sum = 0;
+            let count = 0;
+            
+            for (let i = 1; i < fileData.data.length; i++) {
+                const row = fileData.data[i];
+                if (row[subjectIndex] !== undefined && row[subjectIndex] !== null && !isNaN(row[subjectIndex])) {
+                    sum += parseFloat(row[subjectIndex]);
+                    count++;
+                }
+            }
+            
+            // 计算平均分
+            const average = count > 0 ? (sum / count).toFixed(2) : null;
+            data.push(average);
+        });
+        
+        // 绘制图表
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: selectedSubject,
+                    data: data,
+                    borderColor: colors.borderColor,
+                    backgroundColor: colors.backgroundColor,
+                    borderWidth: 3,
+                    pointBackgroundColor: colors.borderColor,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: '平均分'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '考试'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${selectedSubject} 科目班级平均分变化趋势`,
+                        font: {
+                            size: 18
+                        }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#333',
+                        align: 'top',
+                        formatter: function(value) {
+                            return value;
+                        },
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 添加数据表格
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'average-trend-table-container';
+        
+        // 创建表格
+        const table = document.createElement('table');
+        table.className = 'average-trend-table';
+        
+        // 创建表头
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        
+        // 添加表头列
+        const examHeader = document.createElement('th');
+        examHeader.textContent = '考试';
+        headerRow.appendChild(examHeader);
+        
+        const avgHeader = document.createElement('th');
+        avgHeader.textContent = '平均分';
+        headerRow.appendChild(avgHeader);
+        
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        
+        // 创建表格主体
+        const tbody = document.createElement('tbody');
+        
+        // 添加每个考试的数据行
+        for (let i = 0; i < labels.length; i++) {
+            const row = document.createElement('tr');
+            
+            // 考试名称列
+            const examCell = document.createElement('td');
+            examCell.textContent = labels[i];
+            row.appendChild(examCell);
+            
+            // 平均分列
+            const avgCell = document.createElement('td');
+            avgCell.textContent = data[i] || '无数据';
+            row.appendChild(avgCell);
+            
+            tbody.appendChild(row);
+        }
+        
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+        
+        // 添加表格到结果容器
+        resultContainer.appendChild(tableContainer);
+    }
+    
+    // 将结果容器添加到分析结果区域
+    analysisResult.appendChild(resultContainer);
+    
+    // 移除加载状态
+    analysisResult.classList.remove('loading');
+}
+
+/**
+ * 生成随机颜色
+ * @returns {Object} 包含边框色和背景色的对象
+ */
+function getRandomColor() {
+    const hue = Math.floor(Math.random() * 360);
+    const borderColor = `hsl(${hue}, 70%, 50%)`;
+    const backgroundColor = `hsla(${hue}, 70%, 50%, 0.2)`;
+    
+    return {
+        borderColor,
+        backgroundColor
+    };
+}
