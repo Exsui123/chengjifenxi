@@ -3314,11 +3314,40 @@ function performLevelProportionAnalysis() {
  */
 function getThresholds() {
     // 从本地存储获取分数线设置
-    const passScore = parseInt(localStorage.getItem('passScore')) || 60;
-    const goodScore = parseInt(localStorage.getItem('goodScore')) || 75;
-    const excellentScore = parseInt(localStorage.getItem('excellentScore')) || 90;
+    const storedThresholds = localStorage.getItem('gradeAnalysisThresholds');
     
-    return { passScore, goodScore, excellentScore };
+    if (storedThresholds) {
+        try {
+            const thresholds = JSON.parse(storedThresholds);
+            // 确保所有必需的属性都存在
+            if (typeof thresholds.passScore === 'number' && 
+                typeof thresholds.goodScore === 'number' && 
+                typeof thresholds.excellentScore === 'number') {
+                console.log('从localStorage获取到有效的分数线设置:', thresholds);
+                return thresholds;
+            }
+        } catch (error) {
+            console.error('解析分数线设置时出错:', error);
+        }
+    }
+    
+    // 如果没有有效的存储数据，使用默认值
+    const defaultThresholds = {
+        passScore: 60,
+        goodScore: 75,
+        excellentScore: 90
+    };
+    console.log('使用默认分数线设置:', defaultThresholds);
+    
+    // 保存默认设置到localStorage，以便下次使用
+    try {
+        localStorage.setItem('gradeAnalysisThresholds', JSON.stringify(defaultThresholds));
+        console.log('已保存默认分数线设置到localStorage');
+    } catch (error) {
+        console.error('保存默认分数线设置失败:', error);
+    }
+    
+    return defaultThresholds;
 }
 
 /**
@@ -5725,115 +5754,84 @@ function generateCrossLevelProportionAnalysis(filesData, selectedSubject, select
  * @returns {Object} 班级科目等级占比数据
  */
 function calculateCrossClassLevelProportions(filesData, selectedSubject, thresholds) {
-    // 结果对象，结构为 { 班级: { 科目: { 优秀: 比例, 良好: 比例, 及格: 比例, 不及格: 比例 } } }
-    const result = {};
+    // 兼容性检查: 如果传入的thresholds使用旧的属性名，进行转换
+    if (thresholds.excellent !== undefined && thresholds.excellentScore === undefined) {
+        thresholds.excellentScore = thresholds.excellent;
+    }
+    if (thresholds.good !== undefined && thresholds.goodScore === undefined) {
+        thresholds.goodScore = thresholds.good;
+    }
+    if (thresholds.pass !== undefined && thresholds.passScore === undefined) {
+        thresholds.passScore = thresholds.pass;
+    }
     
-    // 遍历每个文件
+    // 确保thresholds有有效值
+    thresholds.excellentScore = thresholds.excellentScore || 90;
+    thresholds.goodScore = thresholds.goodScore || 75;
+    thresholds.passScore = thresholds.passScore || 60;
+    
+    // 用于存储各班级分数等级占比
+    const levelProportions = {
+        classNames: [],  // 班级名称数组
+        excellent: [],   // 优秀人数占比数组
+        good: [],        // 良好人数占比数组
+        pass: [],        // 及格人数占比数组
+        fail: []         // 不及格人数占比数组
+    };
+    
+    // 处理每个班级的数据
     filesData.forEach(fileData => {
-        if (!fileData || !fileData.data || !Array.isArray(fileData.data) || fileData.data.length < 2) {
-            return; // 跳过无效文件
-        }
-        
         // 获取班级名称
-        const className = fileData.class || `未知班级(${fileData.name})`;
+        const className = fileData.class || getClassNameFromFile(fileData);
+        levelProportions.classNames.push(className);
         
-        // 初始化该班级的数据
-        if (!result[className]) {
-            result[className] = {};
-        }
-        
-        // 获取表头（第一行）
+        // 获取表头和数据
         const headers = fileData.data[0];
+        const students = fileData.data.slice(1);
         
-        // 获取科目列
-        const subjectColumns = getSubjectColumns(headers);
+        // 查找科目列索引
+        const subjectIndex = headers.findIndex(header => header === selectedSubject);
+        if (subjectIndex === -1) return;
         
-        // 如果没有找到科目列，跳过该文件
-        if (subjectColumns.length === 0) {
-            return;
-        }
+        // 统计各等级人数
+        let excellentCount = 0;
+        let goodCount = 0;
+        let passCount = 0;
+        let failCount = 0;
         
-        // 处理科目选择
-        let columnsToProcess = [];
-        if (selectedSubject === 'all') {
-            columnsToProcess = subjectColumns;
-        } else {
-            // 找到对应的科目列
-            const subjectIndex = headers.findIndex(header => header === selectedSubject);
-            if (subjectIndex !== -1) {
-                columnsToProcess = [{ name: selectedSubject, index: subjectIndex }];
-            }
-        }
-        
-        // 如果没有找到对应的科目列，跳过该文件
-        if (columnsToProcess.length === 0) {
-            return;
-        }
-        
-        // 计算每个科目的等级占比
-        columnsToProcess.forEach(column => {
-            // 初始化科目等级计数
-            const levelCounts = {
-                excellent: 0, // 优秀
-                good: 0,      // 良好
-                pass: 0,      // 及格
-                fail: 0       // 不及格
-            };
+        students.forEach(student => {
+            const score = parseFloat(student[subjectIndex]);
+            if (isNaN(score)) return;
             
-            let totalValidScores = 0;
-            
-            // 从第二行开始遍历（跳过表头）
-            for (let i = 1; i < fileData.data.length; i++) {
-                const row = fileData.data[i];
-                if (row && row[column.index] !== undefined && row[column.index] !== null) {
-                    // 尝试转换为数字
-                    const score = parseFloat(row[column.index]);
-                    if (!isNaN(score)) {
-                        // 根据分数线判断等级
-                        if (score >= thresholds.excellent) {
-                            levelCounts.excellent++;
-                        } else if (score >= thresholds.good) {
-                            levelCounts.good++;
-                        } else if (score >= thresholds.pass) {
-                            levelCounts.pass++;
-                        } else {
-                            levelCounts.fail++;
-                        }
-                        
-                        totalValidScores++;
-                    }
-                }
-            }
-            
-            // 如果有有效分数，计算比例
-            if (totalValidScores > 0) {
-                // 计算各等级占比
-                const proportions = {
-                    excellent: Math.round((levelCounts.excellent / totalValidScores) * 1000) / 10, // 保留一位小数的百分比
-                    good: Math.round((levelCounts.good / totalValidScores) * 1000) / 10,
-                    pass: Math.round((levelCounts.pass / totalValidScores) * 1000) / 10,
-                    fail: Math.round((levelCounts.fail / totalValidScores) * 1000) / 10,
-                    // 保存原始计数，用于显示具体人数
-                    counts: {
-                        excellent: levelCounts.excellent,
-                        good: levelCounts.good,
-                        pass: levelCounts.pass,
-                        fail: levelCounts.fail,
-                        total: totalValidScores
-                    }
-                };
-                
-                // 保存到结果对象
-                if (!result[className][column.name]) {
-                    result[className][column.name] = {};
-                }
-                
-                result[className][column.name] = proportions;
+            if (score >= thresholds.excellentScore) {
+                excellentCount++;
+            } else if (score >= thresholds.goodScore) {
+                goodCount++;
+            } else if (score >= thresholds.passScore) {
+                passCount++;
+            } else {
+                failCount++;
             }
         });
+        
+        // 计算总人数和占比
+        const totalCount = students.filter(student => !isNaN(parseFloat(student[subjectIndex]))).length;
+        
+        // 避免除以零
+        if (totalCount > 0) {
+            levelProportions.excellent.push((excellentCount / totalCount) * 100);
+            levelProportions.good.push((goodCount / totalCount) * 100);
+            levelProportions.pass.push((passCount / totalCount) * 100);
+            levelProportions.fail.push((failCount / totalCount) * 100);
+        } else {
+            levelProportions.excellent.push(0);
+            levelProportions.good.push(0);
+            levelProportions.pass.push(0);
+            levelProportions.fail.push(0);
+        }
     });
     
-    return result;
+    return levelProportions;
 }
 
 /**
@@ -5899,7 +5897,7 @@ function renderCrossLevelBySubjectChart(levelProportions, thresholds, canvas) {
         // 添加数据集
         datasets.push(
             {
-                label: `${className} - 优秀 (≥${thresholds.excellent})`,
+                label: `${className} - 优秀 (≥${thresholds.excellentScore})`,
                 data: excellentData,
                 backgroundColor: '#FF85A2', // 浅粉红
                 stack: className,
@@ -5907,7 +5905,7 @@ function renderCrossLevelBySubjectChart(levelProportions, thresholds, canvas) {
                 categoryPercentage: 0.9
             },
             {
-                label: `${className} - 良好 (${thresholds.good}-${thresholds.excellent})`,
+                label: `${className} - 良好 (${thresholds.goodScore}-${thresholds.excellentScore})`,
                 data: goodData,
                 backgroundColor: '#FFC857', // 明亮黄
                 stack: className,
@@ -5915,7 +5913,7 @@ function renderCrossLevelBySubjectChart(levelProportions, thresholds, canvas) {
                 categoryPercentage: 0.9
             },
             {
-                label: `${className} - 及格 (${thresholds.pass}-${thresholds.good})`,
+                label: `${className} - 及格 (${thresholds.passScore}-${thresholds.goodScore})`,
                 data: passData,
                 backgroundColor: '#7ED957', // 鲜绿
                 stack: className,
@@ -5923,7 +5921,7 @@ function renderCrossLevelBySubjectChart(levelProportions, thresholds, canvas) {
                 categoryPercentage: 0.9
             },
             {
-                label: `${className} - 不及格 (<${thresholds.pass})`,
+                label: `${className} - 不及格 (<${thresholds.passScore})`,
                 data: failData,
                 backgroundColor: '#C39BD3', // 梅红紫
                 stack: className,
@@ -6092,7 +6090,7 @@ function renderCrossLevelByClassChart(levelProportions, thresholds, canvas) {
         // 添加数据集
         datasets.push(
             {
-                label: `${subject} - 优秀 (≥${thresholds.excellent})`,
+                label: `${subject} - 优秀 (≥${thresholds.excellentScore})`,
                 data: excellentData,
                 backgroundColor: '#FF85A2', // 浅粉红
                 stack: subject,
@@ -6100,7 +6098,7 @@ function renderCrossLevelByClassChart(levelProportions, thresholds, canvas) {
                 categoryPercentage: 0.9
             },
             {
-                label: `${subject} - 良好 (${thresholds.good}-${thresholds.excellent})`,
+                label: `${subject} - 良好 (${thresholds.goodScore}-${thresholds.excellentScore})`,
                 data: goodData,
                 backgroundColor: '#FFC857', // 明亮黄
                 stack: subject,
@@ -6108,7 +6106,7 @@ function renderCrossLevelByClassChart(levelProportions, thresholds, canvas) {
                 categoryPercentage: 0.9
             },
             {
-                label: `${subject} - 及格 (${thresholds.pass}-${thresholds.good})`,
+                label: `${subject} - 及格 (${thresholds.passScore}-${thresholds.goodScore})`,
                 data: passData,
                 backgroundColor: '#7ED957', // 鲜绿
                 stack: subject,
@@ -6116,7 +6114,7 @@ function renderCrossLevelByClassChart(levelProportions, thresholds, canvas) {
                 categoryPercentage: 0.9
             },
             {
-                label: `${subject} - 不及格 (<${thresholds.pass})`,
+                label: `${subject} - 不及格 (<${thresholds.passScore})`,
                 data: failData,
                 backgroundColor: '#C39BD3', // 梅红紫
                 stack: subject,
@@ -6270,7 +6268,7 @@ function renderSingleSubjectCrossLevelChart(levelProportions, subject, threshold
             labels: classNames,
             datasets: [
                 {
-                    label: `优秀 (≥${thresholds.excellent})`,
+                    label: `优秀 (≥${thresholds.excellentScore})`,
                     data: excellentData,
                     backgroundColor: '#FF85A2', // 浅粉红
                     stack: 'stack',
@@ -6278,7 +6276,7 @@ function renderSingleSubjectCrossLevelChart(levelProportions, subject, threshold
                     categoryPercentage: 0.9
                 },
                 {
-                    label: `良好 (${thresholds.good}-${thresholds.excellent})`,
+                    label: `良好 (${thresholds.goodScore}-${thresholds.excellentScore})`,
                     data: goodData,
                     backgroundColor: '#FFC857', // 明亮黄
                     stack: 'stack',
@@ -6286,7 +6284,7 @@ function renderSingleSubjectCrossLevelChart(levelProportions, subject, threshold
                     categoryPercentage: 0.9
                 },
                 {
-                    label: `及格 (${thresholds.pass}-${thresholds.good})`,
+                    label: `及格 (${thresholds.passScore}-${thresholds.goodScore})`,
                     data: passData,
                     backgroundColor: '#7ED957', // 鲜绿
                     stack: 'stack',
@@ -6294,7 +6292,7 @@ function renderSingleSubjectCrossLevelChart(levelProportions, subject, threshold
                     categoryPercentage: 0.9
                 },
                 {
-                    label: `不及格 (<${thresholds.pass})`,
+                    label: `不及格 (<${thresholds.passScore})`,
                     data: failData,
                     backgroundColor: '#C39BD3', // 梅红紫
                     stack: 'stack',
@@ -6490,7 +6488,7 @@ function loadCrossScoreLevelFileDropdownItems() {
     dropdownMenu.innerHTML = '';
     
     // 获取所有文件
-    const allFiles = getAllFiles();
+    const allFiles = getAllFilesFromStorage();
     if (!allFiles || allFiles.length === 0) {
         // 没有文件时显示提示
         const noFileItem = document.createElement('div');
@@ -6499,7 +6497,6 @@ function loadCrossScoreLevelFileDropdownItems() {
         dropdownMenu.appendChild(noFileItem);
         return;
     }
-    
     // 保存已选择的班级，确保每个班级只能选择一份成绩表
     let selectedClasses = new Set();
     
@@ -6614,7 +6611,7 @@ function updateCrossScoreLevelSelectedFilesList() {
     }
     
     // 获取所有文件
-    const allFiles = getAllFiles();
+    const allFiles = getAllFilesFromStorage();
     
     // 添加已选择的文件
     selectedFileIds.forEach(fileId => {
@@ -6778,6 +6775,31 @@ function performCrossScoreLevelProportionAnalysis() {
     // 获取及格线、良好线、优秀线
     const thresholds = getThresholds();
     
+    // 调试输出
+    console.log('分数线设置:', thresholds);
+    
+    // 检查分数线是否有效
+    if (!thresholds || typeof thresholds.passScore !== 'number' || 
+        typeof thresholds.goodScore !== 'number' || 
+        typeof thresholds.excellentScore !== 'number') {
+        console.error('分数线设置无效:', thresholds);
+        
+        // 尝试重新设置默认值
+        const defaultThresholds = {
+            passScore: 60,
+            goodScore: 75,
+            excellentScore: 90
+        };
+        console.log('使用默认分数线设置:', defaultThresholds);
+        
+        // 保存默认设置到localStorage
+        localStorage.setItem('gradeAnalysisThresholds', JSON.stringify(defaultThresholds));
+        
+        // 生成分析结果
+        generateCrossScoreLevelProportionAnalysis(filesData, selectedSubject, defaultThresholds);
+        return;
+    }
+    
     // 生成分析结果
     generateCrossScoreLevelProportionAnalysis(filesData, selectedSubject, thresholds);
 }
@@ -6825,6 +6847,22 @@ function generateCrossScoreLevelProportionAnalysis(filesData, selectedSubject, t
  * @returns {Object} - 各班级分数等级占比数据
  */
 function calculateClassLevelProportions(filesData, selectedSubject, thresholds) {
+    // 兼容性检查: 如果传入的thresholds使用旧的属性名，进行转换
+    if (thresholds.excellent !== undefined && thresholds.excellentScore === undefined) {
+        thresholds.excellentScore = thresholds.excellent;
+    }
+    if (thresholds.good !== undefined && thresholds.goodScore === undefined) {
+        thresholds.goodScore = thresholds.good;
+    }
+    if (thresholds.pass !== undefined && thresholds.passScore === undefined) {
+        thresholds.passScore = thresholds.pass;
+    }
+    
+    // 确保thresholds有有效值
+    thresholds.excellentScore = thresholds.excellentScore || 90;
+    thresholds.goodScore = thresholds.goodScore || 75;
+    thresholds.passScore = thresholds.passScore || 60;
+    
     // 用于存储各班级分数等级占比
     const levelProportions = {
         classNames: [],  // 班级名称数组
@@ -6858,11 +6896,11 @@ function calculateClassLevelProportions(filesData, selectedSubject, thresholds) 
             const score = parseFloat(student[subjectIndex]);
             if (isNaN(score)) return;
             
-            if (score >= thresholds.excellent) {
+            if (score >= thresholds.excellentScore) {
                 excellentCount++;
-            } else if (score >= thresholds.good) {
+            } else if (score >= thresholds.goodScore) {
                 goodCount++;
-            } else if (score >= thresholds.pass) {
+            } else if (score >= thresholds.passScore) {
                 passCount++;
             } else {
                 failCount++;
@@ -6896,6 +6934,22 @@ function calculateClassLevelProportions(filesData, selectedSubject, thresholds) 
  * @param {HTMLCanvasElement} canvas - 画布元素
  */
 function renderScoreLevelProportionChart(levelProportions, thresholds, canvas) {
+    // 兼容性检查: 如果传入的thresholds使用旧的属性名，进行转换
+    if (thresholds.excellent !== undefined && thresholds.excellentScore === undefined) {
+        thresholds.excellentScore = thresholds.excellent;
+    }
+    if (thresholds.good !== undefined && thresholds.goodScore === undefined) {
+        thresholds.goodScore = thresholds.good;
+    }
+    if (thresholds.pass !== undefined && thresholds.passScore === undefined) {
+        thresholds.passScore = thresholds.pass;
+    }
+    
+    // 确保thresholds有有效值
+    thresholds.excellentScore = thresholds.excellentScore || 90;
+    thresholds.goodScore = thresholds.goodScore || 75;
+    thresholds.passScore = thresholds.passScore || 60;
+    
     // 获取画布上下文
     const ctx = canvas.getContext('2d');
     
@@ -6969,7 +7023,7 @@ function renderScoreLevelProportionChart(levelProportions, thresholds, canvas) {
                 },
                 subtitle: {
                     display: true,
-                    text: `优秀线：${thresholds.excellent}分 | 良好线：${thresholds.good}分 | 及格线：${thresholds.pass}分`,
+                    text: `优秀线：${thresholds.excellentScore}分 | 良好线：${thresholds.goodScore}分 | 及格线：${thresholds.passScore}分`,
                     font: {
                         size: 14
                     },
@@ -7029,4 +7083,17 @@ function hideClassLevelProportionOptions() {
     if (levelProportionOptions) {
         levelProportionOptions.style.display = 'none';
     }
+}
+
+/**
+ * 根据文件ID数组获取对应的文件数据
+ * @param {Array} fileIds - 文件ID数组
+ * @returns {Array} - 文件数据数组
+ */
+function getFilesData(fileIds) {
+    if (!fileIds || fileIds.length === 0) return [];
+    
+    return fileIds.map(fileId => {
+        return getFileById(fileId);
+    }).filter(file => file !== null);
 }

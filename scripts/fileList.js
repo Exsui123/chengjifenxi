@@ -5,9 +5,9 @@
 
 // 默认分数线设置
 const DEFAULT_THRESHOLDS = {
-    pass: 60,      // 及格线
-    good: 75,      // 良好线
-    excellent: 90  // 优秀线
+    passScore: 60,      // 及格线
+    goodScore: 75,      // 良好线
+    excellentScore: 90  // 优秀线
 };
 
 // 当前分数线设置
@@ -28,6 +28,7 @@ function initScoreThresholds() {
     const goodScoreInput = document.getElementById('goodScore');
     const excellentScoreInput = document.getElementById('excellentScore');
     const saveThresholdsBtn = document.getElementById('saveThresholdsBtn');
+    const resetThresholdsBtn = document.getElementById('resetThresholdsBtn');
     
     // 如果元素不存在，表示不在文件列表页面，直接返回
     if (!passScoreInput || !goodScoreInput || !excellentScoreInput || !saveThresholdsBtn) return;
@@ -36,12 +37,36 @@ function initScoreThresholds() {
     loadThresholdsFromStorage();
     
     // 设置输入框的初始值
-    passScoreInput.value = currentThresholds.pass;
-    goodScoreInput.value = currentThresholds.good;
-    excellentScoreInput.value = currentThresholds.excellent;
+    passScoreInput.value = currentThresholds.passScore;
+    goodScoreInput.value = currentThresholds.goodScore;
+    excellentScoreInput.value = currentThresholds.excellentScore;
     
     // 为保存按钮添加点击事件
     saveThresholdsBtn.addEventListener('click', saveThresholds);
+    
+    // 为重置按钮添加点击事件
+    if (resetThresholdsBtn) {
+        resetThresholdsBtn.addEventListener('click', function() {
+            // 重置为默认值
+            currentThresholds = {...DEFAULT_THRESHOLDS};
+            
+            // 更新输入框的值
+            passScoreInput.value = currentThresholds.passScore;
+            goodScoreInput.value = currentThresholds.goodScore;
+            excellentScoreInput.value = currentThresholds.excellentScore;
+            
+            // 保存到本地存储
+            saveThresholdsToStorage();
+            
+            // 显示成功消息
+            showMessage('分数线已重置为默认值', 'success');
+            
+            // 清除旧版本的key
+            localStorage.removeItem('passScore');
+            localStorage.removeItem('goodScore');
+            localStorage.removeItem('excellentScore');
+        });
+    }
     
     // 输入验证：确保良好线大于及格线，优秀线大于良好线
     passScoreInput.addEventListener('change', validateThresholds);
@@ -98,9 +123,9 @@ function saveThresholds() {
     
     // 更新当前分数线设置
     currentThresholds = {
-        pass: parseInt(passScoreInput.value),
-        good: parseInt(goodScoreInput.value),
-        excellent: parseInt(excellentScoreInput.value)
+        passScore: parseInt(passScoreInput.value),
+        goodScore: parseInt(goodScoreInput.value),
+        excellentScore: parseInt(excellentScoreInput.value)
     };
     
     // 保存到本地存储
@@ -118,9 +143,9 @@ function loadThresholdsFromStorage() {
         try {
             const thresholds = JSON.parse(storedThresholds);
             // 确保所有必需的属性都存在
-            if (typeof thresholds.pass === 'number' && 
-                typeof thresholds.good === 'number' && 
-                typeof thresholds.excellent === 'number') {
+            if (typeof thresholds.passScore === 'number' && 
+                typeof thresholds.goodScore === 'number' && 
+                typeof thresholds.excellentScore === 'number') {
                 currentThresholds = thresholds;
             }
         } catch (error) {
