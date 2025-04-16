@@ -1130,4 +1130,92 @@
 
 .average-trend-table tr:hover {
     background-color: #e9f7fe;
+}
+
+/* 跨班级平均分对比分析样式 */
+.cross-average-comparison-container {
+    margin-top: 2rem;
+    width: 100%;
+}
+
+.cross-average-comparison-container .analysis-title {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.cross-average-comparison-container .analysis-chart-container {
+    max-width: 100%;
+    height: 500px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.cross-average-comparison-container .helper-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+/* 跨班级等级占比分析样式 */
+.cross-level-proportion-container {
+    margin-top: 2rem;
+    width: 100%;
+}
+
+.cross-level-proportion-container .analysis-title {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.cross-level-proportion-container .analysis-chart-container {
+    max-width: 100%;
+    height: 500px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.level-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 1rem;
+    gap: 1rem;
+}
+
+.level-legend-item {
+    display: flex;
+    align-items: center;
+    margin: 0.5rem;
+}
+
+.level-legend-color {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 3px;
+}
+
+.level-legend-label {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.level-legend-excellent .level-legend-color {
+    background-color: #FF85A2; /* 浅粉红 */
+}
+
+.level-legend-good .level-legend-color {
+    background-color: #FFC857; /* 明亮黄 */
+}
+
+.level-legend-pass .level-legend-color {
+    background-color: #7ED957; /* 鲜绿 */
+}
+
+.level-legend-fail .level-legend-color {
+    background-color: #C39BD3; /* 梅红紫 */
 } 

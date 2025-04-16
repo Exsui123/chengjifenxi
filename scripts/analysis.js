@@ -82,6 +82,18 @@ function initAnalysisModule() {
                 showClassAverageTrendOptions();
                 clearAnalysisResult();
                 break;
+            case 'cross-class-average-comparison':
+                // 显示跨班级平均分对比分析选项
+                console.log('选择了跨班级平均分对比分析');
+                showCrossClassAverageComparisonOptions();
+                clearAnalysisResult();
+                break;
+            case 'cross-class-level-proportion':
+                // 显示跨班级等级占比分析选项
+                console.log('选择了跨班级等级占比分析');
+                showCrossClassLevelProportionOptions();
+                clearAnalysisResult();
+                break;
             default:
                 // 没有选择任何分析类型
                 console.log('未选择分析类型');
@@ -167,7 +179,7 @@ function initAnalysisModule() {
  */
 function initCustomDropdown() {
     // 初始化趋势分析下拉框
-    initDropdown('.dropdown-selected:not(.detail-dropdown-selected):not(.basic-dropdown-selected):not(.average-dropdown-selected)', 'fileDropdownMenu');
+    initDropdown('.dropdown-selected:not(.detail-dropdown-selected):not(.basic-dropdown-selected):not(.average-dropdown-selected):not(.cross-average-dropdown-selected):not(.cross-level-dropdown-selected)', 'fileDropdownMenu');
     
     // 初始化详情分析下拉框
     initDropdown('.detail-dropdown-selected', 'detailFileDropdownMenu');
@@ -177,6 +189,12 @@ function initCustomDropdown() {
     
     // 初始化班级平均分变化趋势分析下拉框
     initDropdown('.average-dropdown-selected', 'averageFileDropdownMenu');
+    
+    // 初始化跨班级平均分对比分析下拉框
+    initDropdown('.cross-average-dropdown-selected', 'crossAverageFileDropdownMenu');
+    
+    // 初始化跨班级等级占比分析下拉框
+    initDropdown('.cross-level-dropdown-selected', 'crossLevelFileDropdownMenu');
     
     // 加载所有文件数据到缓存中
     loadAllFiles();
@@ -197,6 +215,8 @@ function initDropdown(dropdownSelector, menuId) {
     const isDetailAnalysis = menuId === 'detailFileDropdownMenu';
     const isBasicAnalysis = menuId === 'basicFileDropdownMenu';
     const isAverageAnalysis = menuId === 'averageFileDropdownMenu';
+    const isCrossAverageAnalysis = menuId === 'crossAverageFileDropdownMenu';
+    const isCrossLevelAnalysis = menuId === 'crossLevelFileDropdownMenu';
     
     // 移除现有的事件监听器（如果有标记）
     if (dropdownSelected._hasClickListener) {
@@ -225,6 +245,10 @@ function initDropdown(dropdownSelector, menuId) {
                 loadBasicFileDropdownItems();
             } else if (isAverageAnalysis) {
                 loadAverageFileDropdownItems();
+            } else if (isCrossAverageAnalysis) {
+                loadCrossAverageFileDropdownItems();
+            } else if (isCrossLevelAnalysis) {
+                loadCrossLevelFileDropdownItems();
             } else {
                 loadFileDropdownItems();
             }
@@ -2452,6 +2476,18 @@ function initAnalysisTypeSelector() {
                 showClassAverageTrendOptions();
                 clearAnalysisResult();
                 break;
+            case 'cross-class-average-comparison':
+                // 显示跨班级平均分对比分析选项
+                console.log('选择了跨班级平均分对比分析');
+                showCrossClassAverageComparisonOptions();
+                clearAnalysisResult();
+                break;
+            case 'cross-class-level-proportion':
+                // 显示跨班级等级占比分析选项
+                console.log('选择了跨班级等级占比分析');
+                showCrossClassLevelProportionOptions();
+                clearAnalysisResult();
+                break;
             default:
                 // 没有选择任何分析类型
                 console.log('未选择分析类型');
@@ -2468,8 +2504,16 @@ function hideAllAnalysisOptions() {
     hideTrendAnalysisOptions();
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
-    hideLevelProportionOptions();
     hideClassAverageTrendOptions();
+    hideCrossClassAverageComparisonOptions();
+    hideCrossClassLevelProportionOptions();
+    hideLevelProportionOptions();
+    
+    // 也可以直接隐藏所有.analysis-options元素
+    const allOptions = document.querySelectorAll('.analysis-options');
+    allOptions.forEach(option => {
+        option.style.display = 'none';
+    });
 }
 
 /**
@@ -3032,8 +3076,16 @@ function hideAllAnalysisOptions() {
     hideTrendAnalysisOptions();
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
-    hideLevelProportionOptions();
     hideClassAverageTrendOptions();
+    hideCrossClassAverageComparisonOptions();
+    hideCrossClassLevelProportionOptions();
+    hideLevelProportionOptions();
+    
+    // 也可以直接隐藏所有.analysis-options元素
+    const allOptions = document.querySelectorAll('.analysis-options');
+    allOptions.forEach(option => {
+        option.style.display = 'none';
+    });
 }
 
 /**
@@ -4136,4 +4188,2229 @@ function getRandomColor() {
         borderColor,
         backgroundColor
     };
+}
+
+/**
+ * 显示跨班级平均分对比分析选项
+ */
+function showCrossClassAverageComparisonOptions() {
+    // 设置当前分析类型
+    selectedAnalysisType = 'cross-class-average-comparison';
+    
+    // 重置选中的文件ID
+    selectedFileIds = [];
+    
+    // 获取选项容器元素
+    const optionsContainer = document.getElementById('crossClassAverageComparisonOptions');
+    if (!optionsContainer) return;
+    
+    // 显示选项容器
+    optionsContainer.style.display = 'block';
+    
+    // 初始化科目选择和横坐标选择下拉框
+    const subjectSelect = document.getElementById('crossAverageSubjectSelect');
+    const xAxisSelect = document.getElementById('crossAverageXAxisSelect');
+    
+    if (subjectSelect) {
+        // 禁用科目选择框，等待选择文件后才启用
+        subjectSelect.disabled = true;
+        subjectSelect.innerHTML = '<option value="">-- 请先选择成绩表 --</option><option value="all">全部科目</option>';
+        
+        // 添加科目选择变化事件
+        subjectSelect.removeEventListener('change', handleCrossAverageSubjectChange);
+        subjectSelect.addEventListener('change', handleCrossAverageSubjectChange);
+    }
+    
+    if (xAxisSelect) {
+        // 禁用横坐标选择框，等待选择"全部科目"后才启用
+        xAxisSelect.disabled = true;
+        
+        // 添加横坐标选择变化事件
+        xAxisSelect.removeEventListener('change', handleCrossAverageXAxisChange);
+        xAxisSelect.addEventListener('change', handleCrossAverageXAxisChange);
+    }
+    
+    // 获取生成按钮
+    const generateBtn = document.getElementById('generateCrossAverageComparisonBtn');
+    if (generateBtn) {
+        // 禁用生成按钮，等待必要的选择完成后才启用
+        generateBtn.disabled = true;
+        
+        // 添加生成按钮点击事件
+        generateBtn.removeEventListener('click', performCrossAverageComparisonAnalysis);
+        generateBtn.addEventListener('click', performCrossAverageComparisonAnalysis);
+    }
+}
+
+/**
+ * 隐藏跨班级平均分对比分析选项
+ */
+function hideCrossClassAverageComparisonOptions() {
+    const optionsContainer = document.getElementById('crossClassAverageComparisonOptions');
+    if (optionsContainer) {
+        optionsContainer.style.display = 'none';
+    }
+}
+
+/**
+ * 加载跨班级平均分对比分析文件下拉框的选项
+ */
+function loadCrossAverageFileDropdownItems() {
+    // 获取下拉菜单
+    const dropdownMenu = document.getElementById('crossAverageFileDropdownMenu');
+    if (!dropdownMenu) return;
+    
+    // 清空下拉菜单
+    dropdownMenu.innerHTML = '';
+    
+    // 确保文件数据已加载
+    if (allFilesCache.length === 0) {
+        loadAllFiles();
+    }
+    
+    // 检查是否有文件数据
+    if (allFilesCache.length === 0) {
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'dropdown-item';
+        emptyItem.textContent = '没有可用的成绩表文件';
+        dropdownMenu.appendChild(emptyItem);
+        return;
+    }
+    
+    // 遍历所有文件，添加到下拉菜单
+    allFilesCache.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'dropdown-item';
+        fileItem.dataset.fileId = file.id;
+        
+        // 创建复选框
+        const checkbox = document.createElement('span');
+        checkbox.className = 'checkbox-indicator';
+        fileItem.appendChild(checkbox);
+        
+        // 创建文本内容
+        const textSpan = document.createElement('span');
+        textSpan.className = 'dropdown-item-text';
+        textSpan.textContent = `${file.name} (${file.class || '未知班级'})`;
+        fileItem.appendChild(textSpan);
+        
+        // 检查该文件是否已被选中
+        if (selectedFileIds.includes(file.id)) {
+            fileItem.classList.add('selected');
+        }
+        
+        // 添加点击事件
+        fileItem.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // 切换选中状态
+            this.classList.toggle('selected');
+            const fileId = this.dataset.fileId;
+            
+            // 更新选中的文件ID列表
+            if (this.classList.contains('selected')) {
+                if (!selectedFileIds.includes(fileId)) {
+                    selectedFileIds.push(fileId);
+                }
+            } else {
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+            }
+            
+            // 更新已选择的文件显示
+            updateCrossAverageSelectedFilesList();
+            
+            // 更新科目选择下拉框
+            updateCrossAverageSubjectOptions();
+            
+            // 更新生成按钮状态
+            updateCrossAverageComparisonButtonState();
+        });
+        
+        // 将项目添加到菜单
+        dropdownMenu.appendChild(fileItem);
+    });
+}
+
+/**
+ * 更新跨班级平均分对比分析已选择的文件列表
+ */
+function updateCrossAverageSelectedFilesList() {
+    const selectedFilesContainer = document.getElementById('crossAverageSelectedFilesList');
+    if (!selectedFilesContainer) return;
+    
+    // 清空已选择容器
+    selectedFilesContainer.innerHTML = '';
+    
+    // 检查是否有选中的文件
+    if (selectedFileIds.length === 0) {
+        const emptyElement = document.createElement('div');
+        emptyElement.className = 'empty-selected';
+        emptyElement.textContent = '未选择任何成绩表';
+        selectedFilesContainer.appendChild(emptyElement);
+        return;
+    }
+    
+    // 遍历选中的文件ID，创建已选择列表
+    selectedFileIds.forEach(fileId => {
+        const file = allFilesCache.find(f => f.id === fileId);
+        if (!file) return;
+        
+        const fileElement = document.createElement('div');
+        fileElement.className = 'selected-file-item';
+        fileElement.innerHTML = `
+            <span class="selected-file-name">${file.name}</span>
+            <span class="selected-file-class">(${file.class || '未知班级'})</span>
+            <span class="remove-file" data-file-id="${file.id}">×</span>
+        `;
+        
+        // 添加删除按钮点击事件
+        const removeBtn = fileElement.querySelector('.remove-file');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                const fileId = this.dataset.fileId;
+                
+                // 从选中文件列表中移除
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+                
+                // 更新下拉菜单中的选中状态
+                const dropdownItem = document.querySelector(`.dropdown-item[data-file-id="${fileId}"]`);
+                if (dropdownItem) {
+                    dropdownItem.classList.remove('selected');
+                }
+                
+                // 更新已选择的文件显示
+                updateCrossAverageSelectedFilesList();
+                
+                // 更新科目选择下拉框
+                updateCrossAverageSubjectOptions();
+                
+                // 更新生成按钮状态
+                updateCrossAverageComparisonButtonState();
+            });
+        }
+        
+        selectedFilesContainer.appendChild(fileElement);
+    });
+}
+
+/**
+ * 更新跨班级平均分对比分析科目选择下拉框
+ */
+function updateCrossAverageSubjectOptions() {
+    // 获取科目选择下拉框
+    const subjectSelect = document.getElementById('crossAverageSubjectSelect');
+    if (!subjectSelect) return;
+    
+    // 重置科目选择
+    subjectSelect.innerHTML = '<option value="">-- 请先选择成绩表 --</option>';
+    subjectSelect.disabled = true;
+    
+    // 检查是否有选中的文件
+    if (selectedFileIds.length === 0) {
+        return;
+    }
+    
+    // 获取所有选中文件的科目
+    const subjects = getSubjectsFromSelectedFiles();
+    
+    // 启用科目选择下拉框
+    subjectSelect.disabled = false;
+    
+    // 添加"全部科目"选项
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '全部科目';
+    subjectSelect.appendChild(allOption);
+    
+    // 添加各个科目选项
+    subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+    });
+}
+
+/**
+ * 处理跨班级平均分对比分析科目选择变化事件
+ */
+function handleCrossAverageSubjectChange() {
+    // 获取选择的科目值
+    const selectedSubject = this.value;
+    
+    // 更新横坐标选择下拉框
+    const xAxisSelect = document.getElementById('crossAverageXAxisSelect');
+    if (xAxisSelect) {
+        // 只有选择"全部科目"时才启用横坐标选择
+        if (selectedSubject === 'all') {
+            xAxisSelect.disabled = false;
+            // 重置提示文字
+            const helperText = document.querySelector('.x-axis-select-container .helper-text');
+            if (helperText) {
+                helperText.style.display = 'none';
+            }
+        } else {
+            xAxisSelect.disabled = true;
+            xAxisSelect.value = '';
+            
+            // 显示提示文字
+            const helperText = document.querySelector('.x-axis-select-container .helper-text');
+            if (helperText) {
+                helperText.style.display = 'block';
+            }
+        }
+    }
+    
+    // 更新生成按钮状态
+    updateCrossAverageComparisonButtonState();
+}
+
+/**
+ * 处理跨班级平均分对比分析横坐标选择变化事件
+ */
+function handleCrossAverageXAxisChange() {
+    // 更新生成按钮状态
+    updateCrossAverageComparisonButtonState();
+}
+
+/**
+ * 更新跨班级平均分对比分析生成按钮状态
+ */
+function updateCrossAverageComparisonButtonState() {
+    // 获取生成按钮
+    const generateBtn = document.getElementById('generateCrossAverageComparisonBtn');
+    if (!generateBtn) return;
+    
+    // 获取科目选择和横坐标选择的值
+    const subjectSelect = document.getElementById('crossAverageSubjectSelect');
+    const xAxisSelect = document.getElementById('crossAverageXAxisSelect');
+    
+    if (!subjectSelect || !xAxisSelect) {
+        generateBtn.disabled = true;
+        return;
+    }
+    
+    const selectedSubject = subjectSelect.value;
+    const selectedXAxis = xAxisSelect.value;
+    
+    // 条件：至少选择一个文件 且 选择了科目
+    // 如果选择了"全部科目"，还需要选择横坐标
+    if (selectedFileIds.length > 0 && selectedSubject) {
+        if (selectedSubject === 'all') {
+            // 如果是全部科目，还需要选择横坐标
+            generateBtn.disabled = !selectedXAxis;
+        } else {
+            // 如果不是全部科目，不需要考虑横坐标
+            generateBtn.disabled = false;
+        }
+    } else {
+        generateBtn.disabled = true;
+    }
+}
+
+/**
+ * 执行跨班级平均分对比分析
+ */
+function performCrossAverageComparisonAnalysis() {
+    if (selectedFileIds.length === 0) {
+        showToast('请至少选择一个成绩表', 'error');
+        return;
+    }
+    
+    // 获取科目和横坐标选择
+    const subjectSelect = document.getElementById('crossAverageSubjectSelect');
+    const xAxisSelect = document.getElementById('crossAverageXAxisSelect');
+    
+    if (!subjectSelect) {
+        showToast('科目选择错误', 'error');
+        return;
+    }
+    
+    const selectedSubject = subjectSelect.value;
+    let selectedXAxis = '';
+    
+    if (selectedSubject === 'all') {
+        if (!xAxisSelect || !xAxisSelect.value) {
+            showToast('请选择横坐标', 'error');
+            return;
+        }
+        selectedXAxis = xAxisSelect.value;
+    }
+    
+    // 获取所有选中文件的数据
+    const filesData = [];
+    
+    for (const fileId of selectedFileIds) {
+        const fileData = getFileById(fileId);
+        if (fileData) {
+            filesData.push(fileData);
+        }
+    }
+    
+    if (filesData.length === 0) {
+        showToast('无法获取文件数据', 'error');
+        return;
+    }
+    
+    // 生成分析结果
+    generateCrossAverageComparisonAnalysis(filesData, selectedSubject, selectedXAxis);
+}
+
+/**
+ * 生成跨班级平均分对比分析结果
+ * @param {Array} filesData - 所有选中文件的数据
+ * @param {string} selectedSubject - 选中的科目
+ * @param {string} selectedXAxis - 选中的横坐标
+ */
+function generateCrossAverageComparisonAnalysis(filesData, selectedSubject, selectedXAxis) {
+    // 获取分析结果容器
+    const analysisResult = document.getElementById('analysisResult');
+    if (!analysisResult) return;
+    
+    // 清空分析结果
+    analysisResult.innerHTML = '';
+    
+    // 添加分析容器
+    const container = document.createElement('div');
+    container.className = 'cross-average-comparison-container';
+    
+    // 添加标题
+    const title = document.createElement('h3');
+    title.className = 'analysis-title';
+    title.textContent = selectedSubject === 'all' ? '跨班级全科目平均分对比分析' : `跨班级 ${selectedSubject} 平均分对比分析`;
+    container.appendChild(title);
+    
+    // 准备图表容器
+    const chartContainer = document.createElement('div');
+    chartContainer.className = 'analysis-chart-container';
+    container.appendChild(chartContainer);
+    
+    // 准备图表canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'crossAverageComparisonChart';
+    chartContainer.appendChild(canvas);
+    
+    // 将分析容器添加到结果区域
+    analysisResult.appendChild(container);
+    
+    // 计算各班级各科目的平均分
+    const averageScores = calculateCrossClassAverages(filesData, selectedSubject);
+    
+    // 根据所选横坐标绘制不同的图表
+    if (selectedSubject === 'all' && selectedXAxis === 'subject') {
+        // 横坐标为科目，按班级分组
+        renderCrossAverageBySubjectChart(averageScores, canvas);
+    } else if (selectedSubject === 'all' && selectedXAxis === 'class') {
+        // 横坐标为班级，按科目分组
+        renderCrossAverageByClassChart(averageScores, canvas);
+    } else {
+        // 单科目分析，横坐标固定为班级
+        renderSingleSubjectCrossAverageChart(averageScores, selectedSubject, canvas);
+    }
+}
+
+/**
+ * 计算跨班级各科目平均分
+ * @param {Array} filesData - 所有选中文件的数据
+ * @param {string} selectedSubject - 选中的科目
+ * @returns {Object} 班级科目平均分数据
+ */
+function calculateCrossClassAverages(filesData, selectedSubject) {
+    // 结果对象，结构为 { 班级: { 科目: 平均分 } }
+    const result = {};
+    
+    // 遍历每个文件
+    filesData.forEach(fileData => {
+        if (!fileData || !fileData.data || !Array.isArray(fileData.data) || fileData.data.length < 2) {
+            return; // 跳过无效文件
+        }
+        
+        // 获取班级名称
+        const className = fileData.class || `未知班级(${fileData.name})`;
+        
+        // 初始化该班级的数据
+        if (!result[className]) {
+            result[className] = {};
+        }
+        
+        // 获取表头（第一行）
+        const headers = fileData.data[0];
+        
+        // 获取科目列
+        const subjectColumns = getSubjectColumns(headers);
+        
+        // 如果没有找到科目列，跳过该文件
+        if (subjectColumns.length === 0) {
+            return;
+        }
+        
+        // 处理科目选择
+        let columnsToProcess = [];
+        if (selectedSubject === 'all') {
+            columnsToProcess = subjectColumns;
+        } else {
+            // 找到对应的科目列
+            const subjectIndex = headers.findIndex(header => header === selectedSubject);
+            if (subjectIndex !== -1) {
+                columnsToProcess = [{ name: selectedSubject, index: subjectIndex }];
+            }
+        }
+        
+        // 如果没有找到对应的科目列，跳过该文件
+        if (columnsToProcess.length === 0) {
+            return;
+        }
+        
+        // 计算每个科目的平均分
+        columnsToProcess.forEach(column => {
+            // 获取所有学生该科目的分数
+            const scores = [];
+            
+            // 从第二行开始遍历（跳过表头）
+            for (let i = 1; i < fileData.data.length; i++) {
+                const row = fileData.data[i];
+                if (row && row[column.index] !== undefined && row[column.index] !== null) {
+                    // 尝试转换为数字
+                    const score = parseFloat(row[column.index]);
+                    if (!isNaN(score)) {
+                        scores.push(score);
+                    }
+                }
+            }
+            
+            // 如果有有效分数，计算平均分
+            if (scores.length > 0) {
+                const sum = scores.reduce((acc, curr) => acc + curr, 0);
+                const average = sum / scores.length;
+                
+                // 保存到结果对象
+                result[className][column.name] = Math.round(average * 10) / 10; // 保留一位小数
+            }
+        });
+    });
+    
+    return result;
+}
+
+/**
+ * 渲染以科目为横坐标的图表（按班级分组）
+ * @param {Object} averageScores - 班级科目平均分数据
+ * @param {HTMLElement} canvas - Canvas元素
+ */
+function renderCrossAverageBySubjectChart(averageScores, canvas) {
+    // 获取所有班级和科目
+    const classNames = Object.keys(averageScores);
+    
+    // 如果没有班级数据，显示提示信息
+    if (classNames.length === 0) {
+        showToast('没有有效的班级数据', 'error');
+        return;
+    }
+    
+    // 获取所有科目（合并所有班级的科目）
+    const allSubjects = new Set();
+    classNames.forEach(className => {
+        Object.keys(averageScores[className]).forEach(subject => {
+            allSubjects.add(subject);
+        });
+    });
+    
+    const subjects = Array.from(allSubjects);
+    
+    // 如果没有科目数据，显示提示信息
+    if (subjects.length === 0) {
+        showToast('没有有效的科目数据', 'error');
+        return;
+    }
+    
+    // 获取马卡龙色系颜色
+    const macaronColors = getVividMacaronColors();
+    
+    // 准备数据集
+    const datasets = classNames.map((className, index) => {
+        // 为每个班级分配马卡龙色系的颜色
+        const colorIndex = index % macaronColors.length;
+        const color = macaronColors[colorIndex];
+        
+        // 获取该班级每个科目的平均分
+        const data = subjects.map(subject => {
+            return averageScores[className][subject] || null;
+        });
+        
+        return {
+            label: className,
+            data: data,
+            backgroundColor: color,
+            borderColor: color,
+            borderWidth: 1,
+            borderRadius: 4, // 添加圆角
+            hoverBackgroundColor: color + 'CC', // 添加悬停效果（透明度）
+            barPercentage: 0.8,
+            categoryPercentage: 0.9
+        };
+    });
+    
+    // 创建图表
+    if (window.crossAverageChart) {
+        window.crossAverageChart.destroy();
+    }
+    
+    window.crossAverageChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: subjects,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '跨班级各科目平均分对比（按班级分组）',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    },
+                    color: '#333'
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                datalabels: {
+                    display: true,
+                    color: '#000',
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 0,
+                    formatter: function(value) {
+                        return value !== null ? value : '';
+                    },
+                    font: {
+                        weight: 'bold',
+                        size: 11
+                    },
+                    padding: {
+                        top: 5
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    cornerRadius: 6,
+                    usePointStyle: true,
+                    boxPadding: 6,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y || '无数据'}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '科目',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10
+                        }
+                    },
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#555'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '平均分',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#555',
+                        stepSize: 10
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+/**
+ * 渲染以班级为横坐标的图表（按科目分组）
+ * @param {Object} averageScores - 班级科目平均分数据
+ * @param {HTMLElement} canvas - Canvas元素
+ */
+function renderCrossAverageByClassChart(averageScores, canvas) {
+    // 获取所有班级和科目
+    const classNames = Object.keys(averageScores);
+    
+    // 如果没有班级数据，显示提示信息
+    if (classNames.length === 0) {
+        showToast('没有有效的班级数据', 'error');
+        return;
+    }
+    
+    // 获取所有科目（合并所有班级的科目）
+    const allSubjects = new Set();
+    classNames.forEach(className => {
+        Object.keys(averageScores[className]).forEach(subject => {
+            allSubjects.add(subject);
+        });
+    });
+    
+    const subjects = Array.from(allSubjects);
+    
+    // 如果没有科目数据，显示提示信息
+    if (subjects.length === 0) {
+        showToast('没有有效的科目数据', 'error');
+        return;
+    }
+    
+    // 获取马卡龙色系颜色
+    const macaronColors = getVividMacaronColors();
+    
+    // 准备数据集
+    const datasets = subjects.map((subject, index) => {
+        // 为每个科目分配马卡龙色系的颜色
+        const colorIndex = index % macaronColors.length;
+        const color = macaronColors[colorIndex];
+        
+        // 获取每个班级该科目的平均分
+        const data = classNames.map(className => {
+            return averageScores[className][subject] || null;
+        });
+        
+        return {
+            label: subject,
+            data: data,
+            backgroundColor: color,
+            borderColor: color,
+            borderWidth: 1,
+            borderRadius: 4, // 添加圆角
+            hoverBackgroundColor: color + 'CC', // 添加悬停效果（透明度）
+            barPercentage: 0.8,
+            categoryPercentage: 0.9
+        };
+    });
+    
+    // 创建图表
+    if (window.crossAverageChart) {
+        window.crossAverageChart.destroy();
+    }
+    
+    window.crossAverageChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: classNames,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '跨班级各科目平均分对比（按科目分组）',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    },
+                    color: '#333'
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                datalabels: {
+                    display: true,
+                    color: '#000',
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 0,
+                    formatter: function(value) {
+                        return value !== null ? value : '';
+                    },
+                    font: {
+                        weight: 'bold',
+                        size: 11
+                    },
+                    padding: {
+                        top: 5
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    cornerRadius: 6,
+                    usePointStyle: true,
+                    boxPadding: 6,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y || '无数据'}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '班级',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10
+                        }
+                    },
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#555'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '平均分',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#555',
+                        stepSize: 10
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+/**
+ * 渲染单个科目的跨班级平均分对比图表
+ * @param {Object} averageScores - 班级科目平均分数据
+ * @param {string} subject - 科目名称
+ * @param {HTMLElement} canvas - Canvas元素
+ */
+function renderSingleSubjectCrossAverageChart(averageScores, subject, canvas) {
+    // 获取所有班级
+    const classNames = Object.keys(averageScores);
+    
+    // 如果没有班级数据，显示提示信息
+    if (classNames.length === 0) {
+        showToast('没有有效的班级数据', 'error');
+        return;
+    }
+    
+    // 准备数据
+    const data = classNames.map(className => {
+        return averageScores[className][subject] || null;
+    });
+    
+    // 如果所有数据都为null，显示提示信息
+    if (data.every(d => d === null)) {
+        showToast(`没有班级包含科目 ${subject} 的有效数据`, 'error');
+        return;
+    }
+    
+    // 创建图表
+    if (window.crossAverageChart) {
+        window.crossAverageChart.destroy();
+    }
+    
+    // 获取马卡龙渐变色
+    const macaronGradients = classNames.map((_, index) => {
+        const ctx = canvas.getContext('2d');
+        const colorIndex = index % getVividMacaronColors().length;
+        const color = getVividMacaronColors()[colorIndex];
+        
+        // 创建渐变色
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, color + '80'); // 添加透明度
+        
+        return gradient;
+    });
+    
+    window.crossAverageChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: classNames,
+            datasets: [{
+                label: subject,
+                data: data,
+                backgroundColor: macaronGradients,
+                borderColor: getVividMacaronColors()[0],
+                borderWidth: 1,
+                borderRadius: 6,
+                barPercentage: 0.7,
+                hoverBackgroundColor: getVividMacaronColors()[0] + 'CC'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `跨班级 ${subject} 平均分对比`,
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    },
+                    color: '#333'
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                datalabels: {
+                    display: true,
+                    color: '#000',
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: function(value) {
+                        return value !== null ? value : '';
+                    },
+                    font: {
+                        weight: 'bold',
+                        size: 12
+                    },
+                    offset: 0,
+                    padding: {
+                        top: 5
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#333',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    cornerRadius: 6,
+                    usePointStyle: true,
+                    boxPadding: 6
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '班级',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10
+                        }
+                    },
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#555'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '平均分',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#555',
+                        stepSize: 10
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+/**
+ * 获取马卡龙色系颜色数组
+ * @returns {Array} 马卡龙色系颜色数组
+ */
+function getMacaronColors() {
+    return [
+        '#FFB6C1', // 浅粉红
+        '#87CEFA', // 浅天蓝
+        '#98FB98', // 浅绿
+        '#FFA07A', // 浅鲑鱼色
+        '#DDA0DD', // 梅红色
+        '#FFDAB9', // 桃红色
+        '#87CEEB', // 天蓝色
+        '#F0E68C', // 卡其黄
+        '#E6E6FA', // 薰衣草淡紫
+        '#FFC0CB', // 粉红
+        '#B0E0E6', // 粉蓝
+        '#FAFAD2', // 浅黄
+        '#D8BFD8', // 薰衣草紫
+        '#FFE4E1', // 薄雾玫瑰
+        '#E0FFFF', // 浅青
+        '#FAEBD7', // 古董白
+        '#FFE4B5', // 鹿皮黄
+        '#AFEEEE', // 苍白绿松石
+        '#F5DEB3', // 小麦色
+        '#FFF0F5'  // 薰衣草紫红
+    ];
+}
+
+/**
+ * 获取更生动鲜艳的马卡龙色系
+ * @returns {Array} 鲜艳马卡龙色系颜色数组
+ */
+function getVividMacaronColors() {
+    return [
+        '#FF85A2', // 鲜粉红
+        '#5BB0FF', // 亮蓝
+        '#7ED957', // 鲜绿
+        '#FF7D45', // 橙色
+        '#C875FF', // 紫色
+        '#FFD166', // 黄色
+        '#62C3FF', // 天蓝
+        '#FFC857', // 明亮黄
+        '#B288FD', // 紫罗兰
+        '#FF9FB0', // 粉红
+        '#75E9E4', // 青绿
+        '#FFDA85', // 淡黄
+        '#C39BD3', // 梅红紫
+        '#FF9AA2', // 粉红
+        '#98DDCA', // 薄荷绿
+        '#FFCBA5', // 杏黄
+        '#FFBDBD', // 粉红
+        '#83EEFF', // 天蓝
+        '#F9C97B', // 橙黄
+        '#ACA8FF'  // 淡紫
+    ];
+}
+
+/**
+ * 显示跨班级等级占比分析选项
+ */
+function showCrossClassLevelProportionOptions() {
+    // 设置当前分析类型
+    selectedAnalysisType = 'cross-class-level-proportion';
+    
+    // 重置选中的文件ID
+    selectedFileIds = [];
+    
+    // 获取选项容器元素
+    const optionsContainer = document.getElementById('crossClassLevelProportionOptions');
+    if (!optionsContainer) return;
+    
+    // 显示选项容器
+    optionsContainer.style.display = 'block';
+    
+    // 初始化科目选择和横坐标选择下拉框
+    const subjectSelect = document.getElementById('crossLevelSubjectSelect');
+    const xAxisSelect = document.getElementById('crossLevelXAxisSelect');
+    
+    if (subjectSelect) {
+        // 禁用科目选择框，等待选择文件后才启用
+        subjectSelect.disabled = true;
+        subjectSelect.innerHTML = '<option value="">-- 请先选择成绩表 --</option><option value="all">全部科目</option>';
+        
+        // 添加科目选择变化事件
+        subjectSelect.removeEventListener('change', handleCrossLevelSubjectChange);
+        subjectSelect.addEventListener('change', handleCrossLevelSubjectChange);
+    }
+    
+    if (xAxisSelect) {
+        // 禁用横坐标选择框，等待选择科目后才启用
+        xAxisSelect.disabled = true;
+        
+        // 添加横坐标选择变化事件
+        xAxisSelect.removeEventListener('change', handleCrossLevelXAxisChange);
+        xAxisSelect.addEventListener('change', handleCrossLevelXAxisChange);
+    }
+    
+    // 获取生成按钮
+    const generateBtn = document.getElementById('generateCrossLevelProportionBtn');
+    if (generateBtn) {
+        // 禁用生成按钮，等待必要的选择完成后才启用
+        generateBtn.disabled = true;
+        
+        // 添加生成按钮点击事件
+        generateBtn.removeEventListener('click', performCrossLevelProportionAnalysis);
+        generateBtn.addEventListener('click', performCrossLevelProportionAnalysis);
+    }
+}
+
+/**
+ * 隐藏跨班级等级占比分析选项
+ */
+function hideCrossClassLevelProportionOptions() {
+    const optionsContainer = document.getElementById('crossClassLevelProportionOptions');
+    if (optionsContainer) {
+        optionsContainer.style.display = 'none';
+    }
+}
+
+/**
+ * 加载跨班级等级占比分析文件下拉框的选项
+ */
+function loadCrossLevelFileDropdownItems() {
+    // 获取下拉菜单
+    const dropdownMenu = document.getElementById('crossLevelFileDropdownMenu');
+    if (!dropdownMenu) return;
+    
+    // 清空下拉菜单
+    dropdownMenu.innerHTML = '';
+    
+    // 确保文件数据已加载
+    if (allFilesCache.length === 0) {
+        loadAllFiles();
+    }
+    
+    // 检查是否有文件数据
+    if (allFilesCache.length === 0) {
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'dropdown-item';
+        emptyItem.textContent = '没有可用的成绩表文件';
+        dropdownMenu.appendChild(emptyItem);
+        return;
+    }
+    
+    // 遍历所有文件，添加到下拉菜单
+    allFilesCache.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'dropdown-item';
+        fileItem.dataset.fileId = file.id;
+        
+        // 创建复选框
+        const checkbox = document.createElement('span');
+        checkbox.className = 'checkbox-indicator';
+        fileItem.appendChild(checkbox);
+        
+        // 创建文本内容
+        const textSpan = document.createElement('span');
+        textSpan.className = 'dropdown-item-text';
+        textSpan.textContent = `${file.name} (${file.class || '未知班级'})`;
+        fileItem.appendChild(textSpan);
+        
+        // 检查该文件是否已被选中
+        if (selectedFileIds.includes(file.id)) {
+            fileItem.classList.add('selected');
+        }
+        
+        // 添加点击事件
+        fileItem.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // 切换选中状态
+            this.classList.toggle('selected');
+            const fileId = this.dataset.fileId;
+            
+            // 更新选中的文件ID列表
+            if (this.classList.contains('selected')) {
+                if (!selectedFileIds.includes(fileId)) {
+                    selectedFileIds.push(fileId);
+                }
+            } else {
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+            }
+            
+            // 更新已选择的文件显示
+            updateCrossLevelSelectedFilesList();
+            
+            // 更新科目选择下拉框
+            updateCrossLevelSubjectOptions();
+            
+            // 更新生成按钮状态
+            updateCrossLevelProportionButtonState();
+        });
+        
+        // 将项目添加到菜单
+        dropdownMenu.appendChild(fileItem);
+    });
+}
+
+/**
+ * 更新跨班级等级占比分析已选择的文件列表
+ */
+function updateCrossLevelSelectedFilesList() {
+    const selectedFilesContainer = document.getElementById('crossLevelSelectedFilesList');
+    if (!selectedFilesContainer) return;
+    
+    // 清空已选择容器
+    selectedFilesContainer.innerHTML = '';
+    
+    // 检查是否有选中的文件
+    if (selectedFileIds.length === 0) {
+        const emptyElement = document.createElement('div');
+        emptyElement.className = 'empty-selected';
+        emptyElement.textContent = '未选择任何成绩表';
+        selectedFilesContainer.appendChild(emptyElement);
+        return;
+    }
+    
+    // 遍历选中的文件ID，创建已选择列表
+    selectedFileIds.forEach(fileId => {
+        const file = allFilesCache.find(f => f.id === fileId);
+        if (!file) return;
+        
+        const fileElement = document.createElement('div');
+        fileElement.className = 'selected-file-item';
+        fileElement.innerHTML = `
+            <span class="selected-file-name">${file.name}</span>
+            <span class="selected-file-class">(${file.class || '未知班级'})</span>
+            <span class="remove-file" data-file-id="${file.id}">×</span>
+        `;
+        
+        // 添加删除按钮点击事件
+        const removeBtn = fileElement.querySelector('.remove-file');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                const fileId = this.dataset.fileId;
+                
+                // 从选中文件列表中移除
+                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
+                
+                // 更新下拉菜单中的选中状态
+                const dropdownItem = document.querySelector(`.dropdown-item[data-file-id="${fileId}"]`);
+                if (dropdownItem) {
+                    dropdownItem.classList.remove('selected');
+                }
+                
+                // 更新已选择的文件显示
+                updateCrossLevelSelectedFilesList();
+                
+                // 更新科目选择下拉框
+                updateCrossLevelSubjectOptions();
+                
+                // 更新生成按钮状态
+                updateCrossLevelProportionButtonState();
+            });
+        }
+        
+        selectedFilesContainer.appendChild(fileElement);
+    });
+}
+
+/**
+ * 更新跨班级等级占比分析科目选择下拉框
+ */
+function updateCrossLevelSubjectOptions() {
+    // 获取科目选择下拉框
+    const subjectSelect = document.getElementById('crossLevelSubjectSelect');
+    if (!subjectSelect) return;
+    
+    // 重置科目选择
+    subjectSelect.innerHTML = '<option value="">-- 请先选择成绩表 --</option>';
+    subjectSelect.disabled = true;
+    
+    // 重置横坐标选择
+    const xAxisSelect = document.getElementById('crossLevelXAxisSelect');
+    if (xAxisSelect) {
+        xAxisSelect.disabled = true;
+        xAxisSelect.value = '';
+    }
+    
+    // 检查是否有选中的文件
+    if (selectedFileIds.length === 0) {
+        return;
+    }
+    
+    // 获取所有选中文件的科目
+    const subjects = getSubjectsFromSelectedFiles();
+    
+    // 启用科目选择下拉框
+    subjectSelect.disabled = false;
+    
+    // 添加"全部科目"选项
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '全部科目';
+    subjectSelect.appendChild(allOption);
+    
+    // 添加各个科目选项
+    subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject;
+        option.textContent = subject;
+        subjectSelect.appendChild(option);
+    });
+}
+
+/**
+ * 处理跨班级等级占比分析科目选择变化事件
+ */
+function handleCrossLevelSubjectChange() {
+    // 获取选择的科目值
+    const selectedSubject = this.value;
+    
+    // 更新横坐标选择下拉框
+    const xAxisSelect = document.getElementById('crossLevelXAxisSelect');
+    if (xAxisSelect) {
+        // 只要选了科目就启用横坐标选择
+        if (selectedSubject) {
+            xAxisSelect.disabled = false;
+            xAxisSelect.innerHTML = `
+                <option value="">-- 请选择横坐标 --</option>
+                <option value="subject">科目</option>
+                <option value="class">班级</option>
+            `;
+            
+            // 如果只选了一个科目，且不是"全部科目"，默认横坐标为班级
+            if (selectedSubject !== 'all') {
+                xAxisSelect.value = 'class';
+                // 自动触发横坐标变化事件
+                if (typeof xAxisSelect.onchange === 'function') {
+                    xAxisSelect.onchange();
+                }
+            }
+        } else {
+            xAxisSelect.disabled = true;
+            xAxisSelect.value = '';
+        }
+    }
+    
+    // 更新生成按钮状态
+    updateCrossLevelProportionButtonState();
+}
+
+/**
+ * 处理跨班级等级占比分析横坐标选择变化事件
+ */
+function handleCrossLevelXAxisChange() {
+    // 更新生成按钮状态
+    updateCrossLevelProportionButtonState();
+}
+
+/**
+ * 更新跨班级等级占比分析生成按钮状态
+ */
+function updateCrossLevelProportionButtonState() {
+    // 获取生成按钮
+    const generateBtn = document.getElementById('generateCrossLevelProportionBtn');
+    if (!generateBtn) return;
+    
+    // 获取科目选择和横坐标选择的值
+    const subjectSelect = document.getElementById('crossLevelSubjectSelect');
+    const xAxisSelect = document.getElementById('crossLevelXAxisSelect');
+    
+    if (!subjectSelect || !xAxisSelect) {
+        generateBtn.disabled = true;
+        return;
+    }
+    
+    const selectedSubject = subjectSelect.value;
+    const selectedXAxis = xAxisSelect.value;
+    
+    // 条件：至少选择一个文件 且 选择了科目 且 选择了横坐标
+    if (selectedFileIds.length > 0 && selectedSubject && selectedXAxis) {
+        generateBtn.disabled = false;
+    } else {
+        generateBtn.disabled = true;
+    }
+}
+
+/**
+ * 执行跨班级等级占比分析
+ */
+function performCrossLevelProportionAnalysis() {
+    if (selectedFileIds.length === 0) {
+        showToast('请至少选择一个成绩表', 'error');
+        return;
+    }
+    
+    // 获取科目和横坐标选择
+    const subjectSelect = document.getElementById('crossLevelSubjectSelect');
+    const xAxisSelect = document.getElementById('crossLevelXAxisSelect');
+    
+    if (!subjectSelect || !xAxisSelect) {
+        showToast('选择选项错误', 'error');
+        return;
+    }
+    
+    const selectedSubject = subjectSelect.value;
+    const selectedXAxis = xAxisSelect.value;
+    
+    if (!selectedSubject) {
+        showToast('请选择科目', 'error');
+        return;
+    }
+    
+    if (!selectedXAxis) {
+        showToast('请选择横坐标', 'error');
+        return;
+    }
+    
+    // 获取所有选中文件的数据
+    const filesData = [];
+    
+    for (const fileId of selectedFileIds) {
+        const fileData = getFileById(fileId);
+        if (fileData) {
+            filesData.push(fileData);
+        }
+    }
+    
+    if (filesData.length === 0) {
+        showToast('无法获取文件数据', 'error');
+        return;
+    }
+    
+    // 获取分数线阈值（用于判断等级）
+    const thresholds = getThresholds();
+    
+    // 生成分析结果
+    generateCrossLevelProportionAnalysis(filesData, selectedSubject, selectedXAxis, thresholds);
+}
+
+/**
+ * 生成跨班级等级占比分析结果
+ * @param {Array} filesData - 所有选中文件的数据
+ * @param {string} selectedSubject - 选中的科目
+ * @param {string} selectedXAxis - 选中的横坐标类型
+ * @param {Object} thresholds - 分数线阈值
+ */
+function generateCrossLevelProportionAnalysis(filesData, selectedSubject, selectedXAxis, thresholds) {
+    // 获取分析结果容器
+    const analysisResult = document.getElementById('analysisResult');
+    if (!analysisResult) return;
+    
+    // 清空分析结果
+    analysisResult.innerHTML = '';
+    
+    // 添加分析容器
+    const container = document.createElement('div');
+    container.className = 'cross-level-proportion-container';
+    
+    // 添加标题
+    const title = document.createElement('h3');
+    title.className = 'analysis-title';
+    
+    // 根据选择的科目和横坐标设置标题
+    if (selectedSubject === 'all') {
+        if (selectedXAxis === 'subject') {
+            title.textContent = '跨班级全科目等级占比分析 (按科目分组)';
+        } else {
+            title.textContent = '跨班级全科目等级占比分析 (按班级分组)';
+        }
+    } else {
+        title.textContent = `跨班级 ${selectedSubject} 等级占比分析`;
+    }
+    
+    container.appendChild(title);
+    
+    // 准备图表容器
+    const chartContainer = document.createElement('div');
+    chartContainer.className = 'analysis-chart-container';
+    container.appendChild(chartContainer);
+    
+    // 准备图表canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'crossLevelProportionChart';
+    chartContainer.appendChild(canvas);
+    
+    // 将分析容器添加到结果区域
+    analysisResult.appendChild(container);
+    
+    // 计算各班级各科目的等级占比
+    const levelProportions = calculateCrossClassLevelProportions(filesData, selectedSubject, thresholds);
+    
+    // 根据所选横坐标绘制不同的图表
+    if (selectedSubject === 'all' && selectedXAxis === 'subject') {
+        // 横坐标为科目，按班级分组
+        renderCrossLevelBySubjectChart(levelProportions, thresholds, canvas);
+    } else if (selectedSubject === 'all' && selectedXAxis === 'class') {
+        // 横坐标为班级，按科目分组
+        renderCrossLevelByClassChart(levelProportions, thresholds, canvas);
+    } else {
+        // 单科目分析，横坐标固定为班级
+        renderSingleSubjectCrossLevelChart(levelProportions, selectedSubject, thresholds, canvas);
+    }
+}
+
+/**
+ * 计算跨班级各科目等级占比
+ * @param {Array} filesData - 所有选中文件的数据
+ * @param {string} selectedSubject - 选中的科目
+ * @param {Object} thresholds - 分数线阈值
+ * @returns {Object} 班级科目等级占比数据
+ */
+function calculateCrossClassLevelProportions(filesData, selectedSubject, thresholds) {
+    // 结果对象，结构为 { 班级: { 科目: { 优秀: 比例, 良好: 比例, 及格: 比例, 不及格: 比例 } } }
+    const result = {};
+    
+    // 遍历每个文件
+    filesData.forEach(fileData => {
+        if (!fileData || !fileData.data || !Array.isArray(fileData.data) || fileData.data.length < 2) {
+            return; // 跳过无效文件
+        }
+        
+        // 获取班级名称
+        const className = fileData.class || `未知班级(${fileData.name})`;
+        
+        // 初始化该班级的数据
+        if (!result[className]) {
+            result[className] = {};
+        }
+        
+        // 获取表头（第一行）
+        const headers = fileData.data[0];
+        
+        // 获取科目列
+        const subjectColumns = getSubjectColumns(headers);
+        
+        // 如果没有找到科目列，跳过该文件
+        if (subjectColumns.length === 0) {
+            return;
+        }
+        
+        // 处理科目选择
+        let columnsToProcess = [];
+        if (selectedSubject === 'all') {
+            columnsToProcess = subjectColumns;
+        } else {
+            // 找到对应的科目列
+            const subjectIndex = headers.findIndex(header => header === selectedSubject);
+            if (subjectIndex !== -1) {
+                columnsToProcess = [{ name: selectedSubject, index: subjectIndex }];
+            }
+        }
+        
+        // 如果没有找到对应的科目列，跳过该文件
+        if (columnsToProcess.length === 0) {
+            return;
+        }
+        
+        // 计算每个科目的等级占比
+        columnsToProcess.forEach(column => {
+            // 初始化科目等级计数
+            const levelCounts = {
+                excellent: 0, // 优秀
+                good: 0,      // 良好
+                pass: 0,      // 及格
+                fail: 0       // 不及格
+            };
+            
+            let totalValidScores = 0;
+            
+            // 从第二行开始遍历（跳过表头）
+            for (let i = 1; i < fileData.data.length; i++) {
+                const row = fileData.data[i];
+                if (row && row[column.index] !== undefined && row[column.index] !== null) {
+                    // 尝试转换为数字
+                    const score = parseFloat(row[column.index]);
+                    if (!isNaN(score)) {
+                        // 根据分数线判断等级
+                        if (score >= thresholds.excellent) {
+                            levelCounts.excellent++;
+                        } else if (score >= thresholds.good) {
+                            levelCounts.good++;
+                        } else if (score >= thresholds.pass) {
+                            levelCounts.pass++;
+                        } else {
+                            levelCounts.fail++;
+                        }
+                        
+                        totalValidScores++;
+                    }
+                }
+            }
+            
+            // 如果有有效分数，计算比例
+            if (totalValidScores > 0) {
+                // 计算各等级占比
+                const proportions = {
+                    excellent: Math.round((levelCounts.excellent / totalValidScores) * 1000) / 10, // 保留一位小数的百分比
+                    good: Math.round((levelCounts.good / totalValidScores) * 1000) / 10,
+                    pass: Math.round((levelCounts.pass / totalValidScores) * 1000) / 10,
+                    fail: Math.round((levelCounts.fail / totalValidScores) * 1000) / 10,
+                    // 保存原始计数，用于显示具体人数
+                    counts: {
+                        excellent: levelCounts.excellent,
+                        good: levelCounts.good,
+                        pass: levelCounts.pass,
+                        fail: levelCounts.fail,
+                        total: totalValidScores
+                    }
+                };
+                
+                // 保存到结果对象
+                if (!result[className][column.name]) {
+                    result[className][column.name] = {};
+                }
+                
+                result[className][column.name] = proportions;
+            }
+        });
+    });
+    
+    return result;
+}
+
+/**
+ * 渲染以科目为横坐标的等级占比图表（按班级分组）
+ * @param {Object} levelProportions - 班级科目等级占比数据
+ * @param {Object} thresholds - 分数线阈值
+ * @param {HTMLElement} canvas - Canvas元素
+ */
+function renderCrossLevelBySubjectChart(levelProportions, thresholds, canvas) {
+    // 获取所有班级和科目
+    const classNames = Object.keys(levelProportions);
+    
+    // 如果没有班级数据，显示提示信息
+    if (classNames.length === 0) {
+        showToast('没有有效的班级数据', 'error');
+        return;
+    }
+    
+    // 获取所有科目（合并所有班级的科目）
+    const allSubjects = new Set();
+    classNames.forEach(className => {
+        Object.keys(levelProportions[className]).forEach(subject => {
+            allSubjects.add(subject);
+        });
+    });
+    
+    const subjects = Array.from(allSubjects);
+    
+    // 如果没有科目数据，显示提示信息
+    if (subjects.length === 0) {
+        showToast('没有有效的科目数据', 'error');
+        return;
+    }
+    
+    // 准备数据集
+    const datasets = [];
+    
+    // 为每个班级创建四个数据集（优秀、良好、及格、不及格）
+    classNames.forEach((className, classIndex) => {
+        // 获取马卡龙色系
+        const macaronColors = getVividMacaronColors();
+        
+        // 优秀数据集
+        const excellentData = subjects.map(subject => {
+            return levelProportions[className][subject]?.excellent || 0;
+        });
+        
+        // 良好数据集
+        const goodData = subjects.map(subject => {
+            return levelProportions[className][subject]?.good || 0;
+        });
+        
+        // 及格数据集
+        const passData = subjects.map(subject => {
+            return levelProportions[className][subject]?.pass || 0;
+        });
+        
+        // 不及格数据集
+        const failData = subjects.map(subject => {
+            return levelProportions[className][subject]?.fail || 0;
+        });
+        
+        // 添加数据集
+        datasets.push(
+            {
+                label: `${className} - 优秀 (≥${thresholds.excellent})`,
+                data: excellentData,
+                backgroundColor: '#FF85A2', // 浅粉红
+                stack: className,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            },
+            {
+                label: `${className} - 良好 (${thresholds.good}-${thresholds.excellent})`,
+                data: goodData,
+                backgroundColor: '#FFC857', // 明亮黄
+                stack: className,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            },
+            {
+                label: `${className} - 及格 (${thresholds.pass}-${thresholds.good})`,
+                data: passData,
+                backgroundColor: '#7ED957', // 鲜绿
+                stack: className,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            },
+            {
+                label: `${className} - 不及格 (<${thresholds.pass})`,
+                data: failData,
+                backgroundColor: '#C39BD3', // 梅红紫
+                stack: className,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            }
+        );
+    });
+    
+    // 创建图表
+    if (window.crossLevelChart) {
+        window.crossLevelChart.destroy();
+    }
+    
+    window.crossLevelChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: subjects,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '跨班级各科目等级占比分析（按班级分组）',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    },
+                    color: '#333'
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            return `${context.dataset.label}: ${value}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '科目',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '占比（%）',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+/**
+ * 渲染以班级为横坐标的等级占比图表（按科目分组）
+ * @param {Object} levelProportions - 班级科目等级占比数据
+ * @param {Object} thresholds - 分数线阈值
+ * @param {HTMLElement} canvas - Canvas元素
+ */
+function renderCrossLevelByClassChart(levelProportions, thresholds, canvas) {
+    // 获取所有班级和科目
+    const classNames = Object.keys(levelProportions);
+    
+    // 如果没有班级数据，显示提示信息
+    if (classNames.length === 0) {
+        showToast('没有有效的班级数据', 'error');
+        return;
+    }
+    
+    // 获取所有科目（合并所有班级的科目）
+    const allSubjects = new Set();
+    classNames.forEach(className => {
+        Object.keys(levelProportions[className]).forEach(subject => {
+            allSubjects.add(subject);
+        });
+    });
+    
+    const subjects = Array.from(allSubjects);
+    
+    // 如果没有科目数据，显示提示信息
+    if (subjects.length === 0) {
+        showToast('没有有效的科目数据', 'error');
+        return;
+    }
+    
+    // 准备数据集
+    const datasets = [];
+    
+    // 为每个科目创建四个数据集（优秀、良好、及格、不及格）
+    subjects.forEach((subject, subjectIndex) => {
+        // 优秀数据集
+        const excellentData = classNames.map(className => {
+            return levelProportions[className][subject]?.excellent || 0;
+        });
+        
+        // 良好数据集
+        const goodData = classNames.map(className => {
+            return levelProportions[className][subject]?.good || 0;
+        });
+        
+        // 及格数据集
+        const passData = classNames.map(className => {
+            return levelProportions[className][subject]?.pass || 0;
+        });
+        
+        // 不及格数据集
+        const failData = classNames.map(className => {
+            return levelProportions[className][subject]?.fail || 0;
+        });
+        
+        // 添加数据集
+        datasets.push(
+            {
+                label: `${subject} - 优秀 (≥${thresholds.excellent})`,
+                data: excellentData,
+                backgroundColor: '#FF85A2', // 浅粉红
+                stack: subject,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            },
+            {
+                label: `${subject} - 良好 (${thresholds.good}-${thresholds.excellent})`,
+                data: goodData,
+                backgroundColor: '#FFC857', // 明亮黄
+                stack: subject,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            },
+            {
+                label: `${subject} - 及格 (${thresholds.pass}-${thresholds.good})`,
+                data: passData,
+                backgroundColor: '#7ED957', // 鲜绿
+                stack: subject,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            },
+            {
+                label: `${subject} - 不及格 (<${thresholds.pass})`,
+                data: failData,
+                backgroundColor: '#C39BD3', // 梅红紫
+                stack: subject,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            }
+        );
+    });
+    
+    // 创建图表
+    if (window.crossLevelChart) {
+        window.crossLevelChart.destroy();
+    }
+    
+    window.crossLevelChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: classNames,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: '跨班级各科目等级占比分析（按科目分组）',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    },
+                    color: '#333'
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            return `${context.dataset.label}: ${value}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '班级',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '占比（%）',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
+}
+
+/**
+ * 渲染单个科目的跨班级等级占比图表
+ * @param {Object} levelProportions - 班级科目等级占比数据
+ * @param {string} subject - 科目名称
+ * @param {Object} thresholds - 分数线阈值
+ * @param {HTMLElement} canvas - Canvas元素
+ */
+function renderSingleSubjectCrossLevelChart(levelProportions, subject, thresholds, canvas) {
+    // 获取所有班级
+    const classNames = Object.keys(levelProportions);
+    
+    // 如果没有班级数据，显示提示信息
+    if (classNames.length === 0) {
+        showToast('没有有效的班级数据', 'error');
+        return;
+    }
+    
+    // 准备数据
+    const excellentData = classNames.map(className => {
+        return levelProportions[className][subject]?.excellent || 0;
+    });
+    
+    const goodData = classNames.map(className => {
+        return levelProportions[className][subject]?.good || 0;
+    });
+    
+    const passData = classNames.map(className => {
+        return levelProportions[className][subject]?.pass || 0;
+    });
+    
+    const failData = classNames.map(className => {
+        return levelProportions[className][subject]?.fail || 0;
+    });
+    
+    // 创建图表
+    if (window.crossLevelChart) {
+        window.crossLevelChart.destroy();
+    }
+    
+    window.crossLevelChart = new Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: classNames,
+            datasets: [
+                {
+                    label: `优秀 (≥${thresholds.excellent})`,
+                    data: excellentData,
+                    backgroundColor: '#FF85A2', // 浅粉红
+                    stack: 'stack',
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: `良好 (${thresholds.good}-${thresholds.excellent})`,
+                    data: goodData,
+                    backgroundColor: '#FFC857', // 明亮黄
+                    stack: 'stack',
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: `及格 (${thresholds.pass}-${thresholds.good})`,
+                    data: passData,
+                    backgroundColor: '#7ED957', // 鲜绿
+                    stack: 'stack',
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                },
+                {
+                    label: `不及格 (<${thresholds.pass})`,
+                    data: failData,
+                    backgroundColor: '#C39BD3', // 梅红紫
+                    stack: 'stack',
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `跨班级 ${subject} 等级占比分析`,
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 20
+                    },
+                    color: '#333'
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        boxWidth: 12,
+                        usePointStyle: true,
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            // 获取原始人数信息
+                            const className = classNames[context.dataIndex];
+                            const levelData = levelProportions[className][subject];
+                            let count = 0;
+                            
+                            if (levelData && levelData.counts) {
+                                if (context.dataset.label.includes('优秀')) {
+                                    count = levelData.counts.excellent;
+                                } else if (context.dataset.label.includes('良好')) {
+                                    count = levelData.counts.good;
+                                } else if (context.dataset.label.includes('及格')) {
+                                    count = levelData.counts.pass;
+                                } else if (context.dataset.label.includes('不及格')) {
+                                    count = levelData.counts.fail;
+                                }
+                            }
+                            
+                            return `${context.dataset.label}: ${value}% (${count}人)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: '班级',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '占比（%）',
+                        color: '#333',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            }
+        }
+    });
 }
