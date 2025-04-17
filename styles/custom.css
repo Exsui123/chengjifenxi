@@ -1,0 +1,213 @@
+/* 更新排名和进度条显示相关样式 */
+.student-info h4, .score-summary h4 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding-bottom: 0.7rem;
+}
+
+.student-info h4 i, .score-summary h4 i {
+    margin-right: 8px;
+    color: #4a6cf7;
+}
+
+.subjects-detail h4 i, .chart-container h4 i {
+    margin-right: 8px;
+    color: #4a6cf7;
+}
+
+.rank-info {
+    margin-bottom: 1.2rem !important;
+}
+
+.rank-display {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: rgba(74, 108, 247, 0.08);
+    padding: 5px 10px;
+    border-radius: 6px;
+}
+
+.rank-number {
+    font-weight: 700;
+    color: #e74c3c;
+    font-size: 1.1rem;
+}
+
+.rank-separator {
+    color: #7f8c8d;
+}
+
+.total-number {
+    color: #7f8c8d;
+}
+
+.rank-badge {
+    margin-left: 8px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.rank-progress-container {
+    margin-top: 1rem;
+}
+
+.rank-progress-label {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+
+.rank-progress-bar {
+    height: 6px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.rank-progress {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 1s ease-in-out;
+}
+
+/* 美化科目卡片 */
+.subject-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.subject-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.2rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.subject-card h5 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.subject-card h5 i {
+    margin-right: 8px;
+    color: #4a6cf7;
+    font-size: 0.9rem;
+}
+
+.score-info {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.main-score {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+}
+
+.score-diff {
+    font-size: 0.9rem;
+    margin: 0 0 5px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.score-diff i {
+    font-size: 0.8rem;
+}
+
+.score-level {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.score-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+    background-color: rgba(248, 249, 250, 0.5);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.score-stats p {
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.stat-label {
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.stat-label i {
+    color: #4a6cf7;
+    font-size: 0.85rem;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.rank-progress-mini {
+    margin-top: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rank-progress-bar-mini {
+    flex: 1;
+    height: 5px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.rank-progress-mini-inner {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 1s ease-in-out;
+}
+
+.rank-percentage {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    min-width: 36px;
+    text-align: right;
+} 

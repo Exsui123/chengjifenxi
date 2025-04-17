@@ -2100,6 +2100,30 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
     // 设置单科/全部科目模式的HTML类名标识
     const modeClass = isSingleSubjectMode ? 'single-subject-mode' : 'all-subjects-mode';
     
+    // 计算总分和排名
+    const totalScore = calculateTotalScore(studentData, subjects);
+    const avgScore = (totalScore / subjects.length).toFixed(2);
+    const ranking = calculateRanking(studentData, fileData.data.students, subjects);
+    const totalStudents = fileData.data.students.length;
+    const rankPercentage = ((ranking / totalStudents) * 100).toFixed(1);
+    
+    // 排名等级
+    let rankLevel = '';
+    let rankColor = '';
+    if (ranking <= Math.ceil(totalStudents * 0.1)) {
+        rankLevel = '优秀';
+        rankColor = '#e74c3c';
+    } else if (ranking <= Math.ceil(totalStudents * 0.30)) {
+        rankLevel = '良好';
+        rankColor = '#f39c12';
+    } else if (ranking <= Math.ceil(totalStudents * 0.70)) {
+        rankLevel = '中等';
+        rankColor = '#3498db';
+    } else {
+        rankLevel = '需努力';
+        rankColor = '#7f8c8d';
+    }
+    
     // 雷达图提示文字
     const radarChartNote = isSingleSubjectMode ? 
         '<div class="chart-note">注意：选择全部科目时才会显示成绩雷达图</div>' : '';
@@ -2109,18 +2133,49 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
         <div class="detail-analysis-container ${modeClass}">
             <div class="detail-summary">
                 <div class="student-info">
-                    <p><strong>学号:</strong> ${studentId}</p>
-                    <p><strong>班级:</strong> ${fileData.data.className || '未知班级'}</p>
-                    <p><strong>考试:</strong> ${fileData.name}</p>
+                    <h4><i class="fas fa-user-graduate"></i> 学生信息</h4>
+                    <p>
+                        <strong>学号</strong>
+                        <span>${studentId}</span>
+                    </p>
+                    <p>
+                        <strong>班级</strong>
+                        <span>${fileData.data.className || '未知班级'}</span>
+                    </p>
+                    <p>
+                        <strong>考试</strong>
+                        <span>${fileData.name}</span>
+                    </p>
                 </div>
                 <div class="score-summary">
-                    <p><strong>总分:</strong> ${calculateTotalScore(studentData, subjects)}</p>
-                    <p><strong>平均分:</strong> ${(calculateTotalScore(studentData, subjects) / subjects.length).toFixed(2)}</p>
-                    <p><strong>班级排名:</strong> ${calculateRanking(studentData, fileData.data.students, subjects)}</p>
+                    <h4><i class="fas fa-chart-line"></i> 成绩概览</h4>
+                    <p>
+                        <strong>总分</strong>
+                        <span>${totalScore}</span>
+                    </p>
+                    <p>
+                        <strong>平均分</strong>
+                        <span>${avgScore}</span>
+                    </p>
+                    <p class="rank-info">
+                        <strong>班级排名</strong>
+                        <span class="rank-display">
+                            <span class="rank-number">${ranking}</span>
+                            <span class="rank-separator">/</span>
+                            <span class="total-number">${totalStudents}</span>
+                            <span class="rank-badge" style="background-color: ${rankColor};">${rankLevel}</span>
+                        </span>
+                    </p>
+                    <div class="rank-progress-container">
+                        <div class="rank-progress-label">排名占比: ${rankPercentage}%</div>
+                        <div class="rank-progress-bar">
+                            <div class="rank-progress" style="width: ${rankPercentage}%; background-color: ${rankColor};"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="subjects-detail">
-                <h4>各科成绩详情</h4>
+                <h4><i class="fas fa-book"></i> 各科成绩详情</h4>
                 <div class="subject-cards">
                     ${generateSubjectCards(studentData, displaySubjects, classAvgScores, maxScores, fileData.data.students)}
                 </div>
@@ -2128,12 +2183,12 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
             <div id="detailChartsContainer" class="detail-charts-container">
                 ${!isSingleSubjectMode ? `
                 <div id="radarChartContainer" class="chart-container">
-                    <h4>成绩雷达图</h4>
+                    <h4><i class="fas fa-spider"></i> 成绩雷达图</h4>
                     <canvas id="radarChart"></canvas>
                 </div>
                 ` : radarChartNote}
                 <div id="barChartContainer" class="chart-container">
-                    <h4>与班级平均分对比</h4>
+                    <h4><i class="fas fa-chart-bar"></i> 与班级平均分对比</h4>
                     <canvas id="barChart"></canvas>
                 </div>
             </div>
@@ -2163,20 +2218,51 @@ function generateSubjectCards(studentData, subjects, classAvgScores, maxScores, 
         // 计算分数与平均分的差距
         const diffFromAvg = score - classAvg;
         const diffClass = diffFromAvg >= 0 ? 'positive-diff' : 'negative-diff';
+        const diffIcon = diffFromAvg >= 0 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+        
+        // 计算排名百分比
+        const rankPercentage = ((ranking / allStudents.length) * 100).toFixed(1);
+        
+        // 根据分数确定等级和颜色
+        let scoreLevel = '';
+        let scoreColor = '';
+        
+        if (score >= 90) {
+            scoreLevel = '优秀';
+            scoreColor = '#e74c3c';
+        } else if (score >= 75) {
+            scoreLevel = '良好';
+            scoreColor = '#f39c12';
+        } else if (score >= 60) {
+            scoreLevel = '及格';
+            scoreColor = '#3498db';
+        } else {
+            scoreLevel = '不及格';
+            scoreColor = '#95a5a6';
+        }
         
         return `
             <div class="subject-card">
-                <h5>${subject}</h5>
+                <h5><i class="fas fa-book"></i> ${subject}</h5>
                 <div class="score-info">
-                    <p class="main-score">${score}</p>
-                    <p class="score-diff ${diffClass}">
-                        ${diffFromAvg >= 0 ? '+' : ''}${diffFromAvg.toFixed(2)}
-                    </p>
+                    <p class="main-score" style="color: ${scoreColor};">${score}</p>
+                    <div>
+                        <p class="score-diff ${diffClass}">
+                            ${diffIcon} ${Math.abs(diffFromAvg).toFixed(2)}
+                        </p>
+                        <span class="score-level" style="background-color: ${scoreColor};">${scoreLevel}</span>
+                    </div>
                 </div>
                 <div class="score-stats">
-                    <p><span>班级平均:</span> <span>${classAvg.toFixed(2)}</span></p>
-                    <p><span>最高分:</span> <span>${maxScore}</span></p>
-                    <p><span>排名:</span> <span>${ranking}/${allStudents.length}</span></p>
+                    <p><span class="stat-label"><i class="fas fa-users"></i> 班级平均</span> <span class="stat-value">${classAvg.toFixed(2)}</span></p>
+                    <p><span class="stat-label"><i class="fas fa-trophy"></i> 最高分</span> <span class="stat-value">${maxScore}</span></p>
+                    <p><span class="stat-label"><i class="fas fa-sort-numeric-down"></i> 排名</span> <span class="stat-value">${ranking}/${allStudents.length}</span></p>
+                </div>
+                <div class="rank-progress-mini">
+                    <div class="rank-progress-bar-mini">
+                        <div class="rank-progress-mini-inner" style="width: ${rankPercentage}%; background-color: ${scoreColor};"></div>
+                    </div>
+                    <div class="rank-percentage">${rankPercentage}%</div>
                 </div>
             </div>
         `;
