@@ -1,3 +1,109 @@
+/* 新的布局样式 */
+.detail-title {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #2c3e50;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #eaeaea;
+    position: relative;
+    font-weight: 600;
+}
+
+.detail-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg, #4a6cf7, #8c9eff);
+    border-radius: 3px;
+}
+
+.score-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    padding: 1.8rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(74, 108, 247, 0.1);
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.score-info-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: linear-gradient(to bottom, #4a6cf7, #8c9eff);
+    border-radius: 3px 0 0 3px;
+}
+
+.basic-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 0.8rem;
+    background-color: rgba(74, 108, 247, 0.05);
+    border-radius: 10px;
+}
+
+.basic-info div {
+    display: inline-flex;
+    align-items: center;
+}
+
+.basic-info strong {
+    color: #2c3e50;
+    margin-right: 6px;
+}
+
+.score-data {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: rgba(74, 108, 247, 0.05);
+    padding: 0.8rem 1.2rem;
+    border-radius: 10px;
+}
+
+.score-item strong {
+    color: #2c3e50;
+}
+
+.score-item .rank-badge {
+    margin-left: 10px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .basic-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+    
+    .score-data {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+}
+
 /* 更新排名和进度条显示相关样式 */
 .student-info h4, .score-summary h4 {
     margin-top: 0;
@@ -56,6 +162,7 @@
 
 .rank-progress-container {
     margin-top: 1rem;
+    width: 100%;
 }
 
 .rank-progress-label {

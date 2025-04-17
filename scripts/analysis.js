@@ -2129,48 +2129,30 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
         '<div class="chart-note">注意：选择全部科目时才会显示成绩雷达图</div>' : '';
     
     analysisResult.innerHTML = `
-        <h3 class="detail-title">${studentData.name} - 成绩详情分析</h3>
+        <div class="detail-title">${studentData.name} - 成绩详情分析</div>
         <div class="detail-analysis-container ${modeClass}">
-            <div class="detail-summary">
-                <div class="student-info">
-                    <h4><i class="fas fa-user-graduate"></i> 学生信息</h4>
-                    <p>
-                        <strong>学号</strong>
-                        <span>${studentId}</span>
-                    </p>
-                    <p>
-                        <strong>班级</strong>
-                        <span>${fileData.data.className || '未知班级'}</span>
-                    </p>
-                    <p>
-                        <strong>考试</strong>
-                        <span>${fileData.name}</span>
-                    </p>
+            <div class="score-info-row">
+                <div class="basic-info">
+                    <div><strong>学号：</strong>${studentId}</div>
+                    <div><strong>班级：</strong>${fileData.data.className || '未知班级'}</div>
+                    <div><strong>考试：</strong>${fileData.name}</div>
                 </div>
-                <div class="score-summary">
-                    <h4><i class="fas fa-chart-line"></i> 成绩概览</h4>
-                    <p>
-                        <strong>总分</strong>
-                        <span>${totalScore}</span>
-                    </p>
-                    <p>
-                        <strong>平均分</strong>
-                        <span>${avgScore}</span>
-                    </p>
-                    <p class="rank-info">
-                        <strong>班级排名</strong>
-                        <span class="rank-display">
-                            <span class="rank-number">${ranking}</span>
-                            <span class="rank-separator">/</span>
-                            <span class="total-number">${totalStudents}</span>
-                            <span class="rank-badge" style="background-color: ${rankColor};">${rankLevel}</span>
-                        </span>
-                    </p>
-                    <div class="rank-progress-container">
-                        <div class="rank-progress-label">排名占比: ${rankPercentage}%</div>
-                        <div class="rank-progress-bar">
-                            <div class="rank-progress" style="width: ${rankPercentage}%; background-color: ${rankColor};"></div>
-                        </div>
+                <div class="score-data">
+                    <div class="score-item">
+                        <strong>总分：</strong>${totalScore}
+                    </div>
+                    <div class="score-item">
+                        <strong>平均分：</strong>${avgScore}
+                    </div>
+                    <div class="score-item">
+                        <strong>班级排名：</strong>${ranking} / ${totalStudents}
+                        <div class="rank-badge" style="background-color: ${rankColor};">${rankLevel}</div>
+                    </div>
+                </div>
+                <div class="rank-progress-container">
+                    <div class="rank-progress-label">排名占比: ${rankPercentage}%</div>
+                    <div class="rank-progress-bar">
+                        <div class="rank-progress" style="width: ${rankPercentage}%; background-color: ${rankColor};"></div>
                     </div>
                 </div>
             </div>
