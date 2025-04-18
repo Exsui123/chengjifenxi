@@ -3,8 +3,40 @@
  * 用于优化饼图统计信息的显示效果
  */
 
+// 确保Chart.js和ChartDataLabels插件正确加载和注册
+function ensureChartLibrariesLoaded() {
+    if (window.Chart && window.ChartDataLabels) {
+        console.log('Chart.js和ChartDataLabels已正确加载');
+        
+        // 注册Chart.js的datalabels插件
+        Chart.register(ChartDataLabels);
+        
+        // 设置全局默认值
+        Chart.defaults.font.family = "'Helvetica Neue', 'Arial', sans-serif";
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        
+        // 修复移动设备上的触摸交互
+        Chart.defaults.plugins.tooltip.interaction = {
+            mode: 'nearest',
+            intersect: false
+        };
+        
+        return true;
+    } else {
+        console.error('Chart.js或ChartDataLabels未正确加载，尝试重新加载');
+        
+        // 如果库未加载，尝试延迟再次检查
+        setTimeout(ensureChartLibrariesLoaded, 500);
+        return false;
+    }
+}
+
 // 在页面加载完成后执行初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 确保Chart.js和插件已加载
+    ensureChartLibrariesLoaded();
+    
     // 初始化图表增强功能
     initChartEnhancer();
 });
@@ -21,6 +53,9 @@ function initChartEnhancer() {
             if (mutation.addedNodes.length) {
                 // 检查是否添加了统计信息元素
                 enhanceLevelProportionStats();
+                
+                // 检查是否添加了图表容器
+                checkAndFixChartContainers();
             }
         });
     });
@@ -39,6 +74,32 @@ function initChartEnhancer() {
     
     // 立即执行一次检查，以防元素已经存在
     enhanceLevelProportionStats();
+    checkAndFixChartContainers();
+}
+
+/**
+ * 检查和修复图表容器
+ */
+function checkAndFixChartContainers() {
+    // 查找所有图表容器
+    const chartContainers = document.querySelectorAll('.chart-container, .analysis-chart-container');
+    
+    chartContainers.forEach(container => {
+        // 确保容器有足够的高度
+        if (parseInt(window.getComputedStyle(container).height) < 200) {
+            container.style.height = '500px';
+            console.log('修复了图表容器高度');
+        }
+        
+        // 查找内部的canvas元素
+        const canvas = container.querySelector('canvas');
+        if (canvas) {
+            // 确保canvas元素宽高设置正确
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            console.log('修复了canvas元素尺寸');
+        }
+    });
 }
 
 /**

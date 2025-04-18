@@ -5204,127 +5204,105 @@ function renderSingleSubjectCrossAverageChart(averageScores, subject, canvas) {
         return gradient;
     });
     
-    window.crossAverageChart = new Chart(canvas.getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: classNames,
-            datasets: [{
-                label: subject,
-                data: data,
-                backgroundColor: macaronGradients,
-                borderColor: getVividMacaronColors()[0],
-                borderWidth: 1,
-                borderRadius: 6,
-                barPercentage: 0.7,
-                hoverBackgroundColor: getVividMacaronColors()[0] + 'CC'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: `跨班级 ${subject} 平均分对比`,
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    },
-                    padding: {
-                        top: 10,
-                        bottom: 20
-                    },
-                    color: '#333'
-                },
-                legend: {
-                    position: 'top',
-                    labels: {
-                        boxWidth: 12,
-                        usePointStyle: true,
-                        pointStyle: 'circle',
+    // 确保Chart.js已加载
+    if (!window.Chart) {
+        console.error('Chart.js未加载，无法创建图表');
+        showToast('图表库未加载，请刷新页面后重试', 'error');
+        return;
+    }
+    
+    try {
+        // 创建新图表
+        window.crossAverageChart = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: classNames,
+                datasets: [{
+                    label: subject,
+                    data: data,
+                    backgroundColor: macaronGradients,
+                    borderColor: getVividMacaronColors().slice(0, classNames.length),
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    barPercentage: 0.7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `跨班级 ${subject} 平均分对比`,
                         font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        },
+                        color: '#333'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label;
+                            },
+                            label: function(context) {
+                                const label = subject;
+                                const value = context.raw;
+                                return `${label}: ${value !== null ? value : '无数据'}`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: true,
+                        color: '#333',
+                        anchor: 'end',
+                        align: 'top',
+                        offset: 4,
+                        formatter: function(value) {
+                            return value !== null ? value : '';
+                        },
+                        font: {
+                            weight: 'bold',
                             size: 12
                         }
                     }
                 },
-                datalabels: {
-                    display: true,
-                    color: '#000',
-                    anchor: 'end',
-                    align: 'top',
-                    formatter: function(value) {
-                        return value !== null ? value : '';
-                    },
-                    font: {
-                        weight: 'bold',
-                        size: 12
-                    },
-                    offset: 0,
-                    padding: {
-                        top: 5
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    titleColor: '#333',
-                    bodyColor: '#333',
-                    borderColor: '#ccc',
-                    borderWidth: 1,
-                    cornerRadius: 6,
-                    usePointStyle: true,
-                    boxPadding: 6
-                }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: '班级',
-                        color: '#333',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        padding: {
-                            top: 10
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '平均分',
+                            font: {
+                                size: 14
+                            }
                         }
                     },
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: '#555'
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: '平均分',
-                        color: '#333',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        },
-                        padding: {
-                            bottom: 10
+                    x: {
+                        title: {
+                            display: true,
+                            text: '班级',
+                            font: {
+                                size: 14
+                            }
                         }
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    },
-                    ticks: {
-                        color: '#555',
-                        stepSize: 10
                     }
                 }
-            },
-            animation: {
-                duration: 1000,
-                easing: 'easeOutQuart'
             }
-        }
-    });
+        });
+        
+        console.log('成功渲染单科目跨班级平均分对比图表');
+    } catch (error) {
+        console.error('渲染图表时发生错误:', error);
+        showToast('渲染图表出错，请刷新页面后重试', 'error');
+    }
 }
 
 /**
