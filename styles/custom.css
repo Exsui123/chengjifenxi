@@ -865,4 +865,104 @@
         grid-template-columns: 1fr;
         max-width: 320px;
     }
+}
+
+/* 饼图下方成绩统计信息展示区域样式 */
+.chart-stats-container {
+    background-color: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+}
+
+.chart-stats-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.chart-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.stats-item {
+    background: rgba(248, 249, 250, 0.8);
+    border-radius: 8px;
+    padding: 12px 15px;
+    flex: 1;
+    min-width: 120px;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.stats-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-item.excellent {
+    border-left-color: #4CAF50;
+}
+
+.stats-item.good {
+    border-left-color: #2196F3;
+}
+
+.stats-item.pass {
+    border-left-color: #FF9800;
+}
+
+.stats-item.fail {
+    border-left-color: #F44336;
+}
+
+.stats-item.total {
+    border-left-color: #9C27B0;
+}
+
+.stats-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.stats-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.stats-percentage {
+    font-size: 15px;
+    color: #777;
+    margin-left: 8px;
+}
+
+.score-threshold-info {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: rgba(248, 249, 250, 0.5);
+    border-radius: 8px;
+    font-size: 14px;
+    color: #666;
+    border-left: 4px solid #9C27B0;
+}
+
+/* 响应式设计调整 */
+@media screen and (max-width: 768px) {
+    .chart-stats-content {
+        flex-direction: column;
+    }
+    
+    .stats-item {
+        margin-bottom: 10px;
+    }
 } 
