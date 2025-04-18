@@ -461,6 +461,32 @@
         <p>&copy; 2023 成绩分析系统 | 纯前端实现</p>
     </footer>
 
+    <!-- 学生名单弹窗 -->
+    <div id="studentListModal" class="student-list-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><span class="modal-icon"></span><span id="modalTitle">学生名单</span></h3>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div id="modalBody">
+                <table class="student-list-table">
+                    <thead>
+                        <tr>
+                            <th>序号</th>
+                            <th>姓名</th>
+                            <th>学号</th>
+                            <th>分数</th>
+                            <th>排名</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentListBody">
+                        <!-- 学生名单将通过JavaScript填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript文件 -->
     <script src="scripts/app.js"></script>
     <script src="scripts/upload.js"></script>

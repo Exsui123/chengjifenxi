@@ -3047,6 +3047,37 @@ function createSubjectStatCard(subject, studentData, columnIndex, passScore, goo
     // 创建下排指标卡片
     bottomRowIndicators.forEach(indicator => {
         const indicatorCard = createIndicatorCard(indicator);
+        // 为分数等级卡片添加点击事件（这些卡片有count属性）
+        if (indicator.count !== undefined) {
+            indicatorCard.addEventListener('click', () => {
+                // 获取各等级的分数范围
+                let minThreshold = 0;
+                let maxThreshold = 100;
+                
+                // 根据指标类型确定分数范围
+                switch (indicator.name) {
+                    case '优秀率':
+                        minThreshold = excellentScore;
+                        maxThreshold = Infinity;
+                        break;
+                    case '良好率':
+                        minThreshold = goodScore;
+                        maxThreshold = excellentScore;
+                        break;
+                    case '及格率':
+                        minThreshold = passScore;
+                        maxThreshold = goodScore;
+                        break;
+                    case '不及格率':
+                        minThreshold = 0;
+                        maxThreshold = passScore;
+                        break;
+                }
+                
+                // 显示相应等级的学生名单
+                showStudentsByScoreRange(subject, studentData, columnIndex, minThreshold, maxThreshold, indicator.name);
+            });
+        }
         bottomRow.appendChild(indicatorCard);
     });
     
@@ -3066,6 +3097,13 @@ function createSubjectStatCard(subject, studentData, columnIndex, passScore, goo
 function createIndicatorCard(indicator) {
     const indicatorCard = document.createElement('div');
     indicatorCard.className = `indicator-card ${indicator.colorClass}`;
+    
+    // 如果是分数等级指标（有count属性），添加可点击样式和事件数据
+    if (indicator.count !== undefined) {
+        indicatorCard.classList.add('clickable');
+        // 存储指标名称数据，用于点击时识别
+        indicatorCard.dataset.indicatorType = indicator.name;
+    }
     
     const iconElement = document.createElement('div');
     iconElement.className = 'indicator-icon';
@@ -7136,3 +7174,196 @@ function getFilesData(fileIds) {
         return getFileById(fileId);
     }).filter(file => file !== null);
 }
+
+/**
+ * 初始化弹窗关闭按钮的点击事件
+ */
+function initModalControls() {
+    const modal = document.getElementById('studentListModal');
+    const closeBtn = document.getElementById('closeModal');
+    
+    // 点击关闭按钮关闭弹窗
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    
+    // 点击弹窗外部区域关闭弹窗
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * 根据分数范围显示学生名单
+ * @param {string} subject - 科目名称
+ * @param {Array} studentData - 学生数据数组
+ * @param {number} scoreColumnIndex - 分数所在列索引
+ * @param {number} minScore - 最低分数
+ * @param {number} maxScore - 最高分数
+ * @param {string} levelName - 等级名称
+ */
+function showStudentsByScoreRange(subject, studentData, scoreColumnIndex, minScore, maxScore, levelName) {
+    // 获取弹窗元素
+    const modal = document.getElementById('studentListModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalIcon = document.querySelector('.modal-icon');
+    const studentListBody = document.getElementById('studentListBody');
+    
+    if (!modal || !modalTitle || !studentListBody) {
+        console.error('弹窗元素不存在');
+        return;
+    }
+    
+    // 设置弹窗标题
+    modalTitle.textContent = `${subject} - ${levelName}学生名单`;
+    
+    // 设置图标样式
+    let iconColor = '';
+    let iconSvg = '';
+    
+    switch(levelName) {
+        case '优秀率':
+            iconColor = '#27ae60';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>`;
+            break;
+        case '良好率':
+            iconColor = '#4a6cf7';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>`;
+            break;
+        case '及格率':
+            iconColor = '#6d7d99';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            break;
+        case '不及格率':
+            iconColor = '#f15f5f';
+            iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+            break;
+    }
+    
+    modalIcon.style.backgroundColor = iconColor;
+    modalIcon.innerHTML = iconSvg;
+    
+    // 清空学生列表
+    studentListBody.innerHTML = '';
+    
+    // 查找学生姓名和学号所在列
+    const nameColumnIndex = findStudentNameColumnInStudentData(studentData);
+    const idColumnIndex = findStudentIdColumnInStudentData(studentData);
+    
+    // 筛选满足分数范围的学生
+    const filteredStudents = studentData.filter(student => {
+        const scoreStr = student[scoreColumnIndex];
+        if (scoreStr && !isNaN(scoreStr)) {
+            const score = parseFloat(scoreStr);
+            return score >= minScore && score < maxScore;
+        }
+        return false;
+    });
+    
+    // 按分数从高到低排序
+    filteredStudents.sort((a, b) => {
+        const scoreA = parseFloat(a[scoreColumnIndex]);
+        const scoreB = parseFloat(b[scoreColumnIndex]);
+        return scoreB - scoreA;  // 降序排列
+    });
+    
+    // 显示学生列表
+    if (filteredStudents.length === 0) {
+        // 没有学生
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `<td colspan="5" class="empty-list">没有符合条件的学生</td>`;
+        studentListBody.appendChild(emptyRow);
+    } else {
+        // 添加学生行
+        filteredStudents.forEach((student, index) => {
+            const studentName = nameColumnIndex !== -1 ? student[nameColumnIndex] : '未知';
+            const studentId = idColumnIndex !== -1 ? student[idColumnIndex] : '未知';
+            const score = parseFloat(student[scoreColumnIndex]).toFixed(1);
+            const rank = index + 1;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${studentName}</td>
+                <td>${studentId}</td>
+                <td class="student-score">${score}</td>
+                <td class="student-rank">${rank}/${filteredStudents.length}</td>
+            `;
+            studentListBody.appendChild(row);
+        });
+    }
+    
+    // 显示弹窗
+    modal.style.display = 'block';
+}
+
+/**
+ * 在学生数据中查找姓名列的索引
+ * @param {Array} studentData - 学生数据
+ * @returns {number} 姓名列索引，如果未找到则返回-1
+ */
+function findStudentNameColumnInStudentData(studentData) {
+    if (!studentData || studentData.length === 0) return -1;
+    
+    // 常见的姓名列名称（小写）
+    const nameKeywords = ['姓名', '名字', '学生', 'name', '学生姓名'];
+    
+    // 检查第一行的每一列
+    const firstStudent = studentData[0];
+    for (let i = 0; i < firstStudent.length; i++) {
+        const cellValue = String(firstStudent[i]).toLowerCase();
+        
+        // 如果单元格内容是姓名关键词之一
+        if (nameKeywords.some(keyword => cellValue.includes(keyword))) {
+            return i;
+        }
+        
+        // 如果是中文名字（通常是2-4个字符）
+        if (/^[\u4e00-\u9fa5]{2,4}$/.test(cellValue)) {
+            return i;
+        }
+    }
+    
+    // 如果没有找到明显的姓名列，假设第一列是姓名
+    return 0;
+}
+
+/**
+ * 在学生数据中查找学号列的索引
+ * @param {Array} studentData - 学生数据
+ * @returns {number} 学号列索引，如果未找到则返回-1
+ */
+function findStudentIdColumnInStudentData(studentData) {
+    if (!studentData || studentData.length === 0) return -1;
+    
+    // 常见的学号列名称（小写）
+    const idKeywords = ['学号', '编号', 'id', '学生编号', '学生id'];
+    
+    // 检查第一行的每一列
+    const firstStudent = studentData[0];
+    for (let i = 0; i < firstStudent.length; i++) {
+        const cellValue = String(firstStudent[i]).toLowerCase();
+        
+        // 如果单元格内容是学号关键词之一
+        if (idKeywords.some(keyword => cellValue.includes(keyword))) {
+            return i;
+        }
+        
+        // 如果是数字ID
+        if (/^\d{5,12}$/.test(cellValue)) {
+            return i;
+        }
+    }
+    
+    // 如果没有找到明显的学号列，假设第二列是学号（如果有至少两列）
+    return firstStudent.length > 1 ? 1 : -1;
+}
+
+// 在页面加载时初始化弹窗控件
+document.addEventListener('DOMContentLoaded', () => {
+    initModalControls();
+});
