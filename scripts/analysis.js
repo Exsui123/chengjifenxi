@@ -88,12 +88,6 @@ function initAnalysisModule() {
                 showCrossClassAverageComparisonOptions();
                 clearAnalysisResult();
                 break;
-            case 'cross-class-level-proportion':
-                // 显示跨班级等级占比分析选项
-                console.log('选择了跨班级等级占比分析');
-                showCrossClassLevelProportionOptions();
-                clearAnalysisResult();
-                break;
             case 'cross-class-score-level-proportion':
                 // 显示跨班级分数等级占比分析选项
                 console.log('选择了跨班级分数等级占比分析');
@@ -2562,12 +2556,6 @@ function initAnalysisTypeSelector() {
                 showCrossClassAverageComparisonOptions();
                 clearAnalysisResult();
                 break;
-            case 'cross-class-level-proportion':
-                // 显示跨班级等级占比分析选项
-                console.log('选择了跨班级等级占比分析');
-                showCrossClassLevelProportionOptions();
-                clearAnalysisResult();
-                break;
             case 'cross-class-score-level-proportion':
                 // 显示跨班级分数等级占比分析选项
                 console.log('选择了跨班级分数等级占比分析');
@@ -2590,9 +2578,9 @@ function hideAllAnalysisOptions() {
     hideTrendAnalysisOptions();
     hideDetailAnalysisOptions();
     hideBasicAnalysisOptions();
+    hideClassLevelProportionOptions();
     hideClassAverageTrendOptions();
     hideCrossClassAverageComparisonOptions();
-    hideCrossClassLevelProportionOptions();
     hideCrossClassScoreLevelProportionOptions();
 }
 
@@ -3001,7 +2989,7 @@ function createSubjectStatCard(subject, studentData, columnIndex, passScore, goo
     // 添加科目标题
     const subjectTitle = document.createElement('h4');
     subjectTitle.className = 'subject-title';
-    subjectTitle.textContent = subject;
+    subjectTitle.innerHTML = `<i class="fas fa-book"></i> ${subject}`;
     card.appendChild(subjectTitle);
     
     // 收集有效成绩数据
@@ -7139,7 +7127,6 @@ function hideAllAnalysisOptions() {
     hideClassLevelProportionOptions();
     hideClassAverageTrendOptions();
     hideCrossClassAverageComparisonOptions();
-    hideCrossClassLevelProportionOptions();
     hideCrossClassScoreLevelProportionOptions();
 }
 

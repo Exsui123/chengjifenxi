@@ -317,4 +317,273 @@
     color: #7f8c8d;
     min-width: 36px;
     text-align: right;
+}
+
+/* 指标卡片样式 */
+.indicators-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.top-row, .bottom-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.8rem;
+    justify-content: space-between;
+}
+
+.indicator-card {
+    flex: 1;
+    min-width: 200px;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    align-items: center;
+    text-align: center;
+}
+
+.indicator-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.indicator-icon {
+    margin-bottom: 1rem;
+    color: #fff;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.indicator-name {
+    font-size: 1rem;
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.indicator-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    text-align: center;
+    margin: 0 auto;
+}
+
+.indicator-count {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 0.3rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* 指标卡片颜色变体 */
+.indicator-highest {
+    background: linear-gradient(135deg, rgba(246, 229, 141, 0.1) 0%, rgba(255, 190, 0, 0.1) 100%);
+    border-left: 4px solid #ffbe00;
+}
+
+.indicator-highest .indicator-icon {
+    background-color: #ffbe00;
+}
+
+.indicator-average {
+    background: linear-gradient(135deg, rgba(145, 213, 255, 0.1) 0%, rgba(29, 161, 242, 0.1) 100%);
+    border-left: 4px solid #1da1f2;
+}
+
+.indicator-average .indicator-icon {
+    background-color: #1da1f2;
+}
+
+.indicator-lowest {
+    background: linear-gradient(135deg, rgba(255, 177, 153, 0.1) 0%, rgba(241, 95, 95, 0.1) 100%);
+    border-left: 4px solid #f15f5f;
+}
+
+.indicator-lowest .indicator-icon {
+    background-color: #f15f5f;
+}
+
+.indicator-excellent {
+    background: linear-gradient(135deg, rgba(130, 215, 178, 0.1) 0%, rgba(39, 174, 96, 0.1) 100%);
+    border-left: 4px solid #27ae60;
+}
+
+.indicator-excellent .indicator-icon {
+    background-color: #27ae60;
+}
+
+.indicator-good {
+    background: linear-gradient(135deg, rgba(160, 217, 250, 0.1) 0%, rgba(74, 108, 247, 0.1) 100%);
+    border-left: 4px solid #4a6cf7;
+}
+
+.indicator-good .indicator-icon {
+    background-color: #4a6cf7;
+}
+
+.indicator-pass {
+    background: linear-gradient(135deg, rgba(178, 190, 205, 0.1) 0%, rgba(109, 125, 153, 0.1) 100%);
+    border-left: 4px solid #6d7d99;
+}
+
+.indicator-pass .indicator-icon {
+    background-color: #6d7d99;
+}
+
+.indicator-fail {
+    background: linear-gradient(135deg, rgba(253, 167, 223, 0.1) 0%, rgba(241, 95, 95, 0.1) 100%);
+    border-left: 4px solid #f15f5f;
+}
+
+.indicator-fail .indicator-icon {
+    background-color: #f15f5f;
+}
+
+/* 响应式设计调整 */
+@media (max-width: 768px) {
+    .top-row, .bottom-row {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .indicator-card {
+        min-width: auto;
+        margin-bottom: 0.5rem;
+    }
+    
+    .indicator-value {
+        font-size: 2.2rem;
+    }
+}
+
+/* 科目标题样式 */
+.subject-title {
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #2c3e50;
+    background: linear-gradient(135deg, rgba(74, 108, 247, 0.08) 0%, rgba(138, 168, 248, 0.12) 100%);
+    padding: 1rem 1.5rem;
+    margin: 0 0 1.5rem 0;
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.subject-title i {
+    margin-right: 10px;
+    color: #4a6cf7;
+    font-size: 1.1rem;
+}
+
+.subject-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, #4a6cf7, #8c9eff);
+    border-radius: 4px 0 0 4px;
+}
+
+.subject-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 4px;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(74, 108, 247, 0.5), rgba(255, 255, 255, 0));
+}
+
+/* 科目标题动画效果 */
+@keyframes titleGlow {
+    0% {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    }
+    50% {
+        box-shadow: 0 3px 12px rgba(74, 108, 247, 0.15);
+    }
+    100% {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    }
+}
+
+.subject-title:hover {
+    animation: titleGlow 2s infinite;
+}
+
+/* 基础分析容器样式 */
+.basic-analysis-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.basic-analysis-title {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #eaeaea;
+    position: relative;
+}
+
+.basic-analysis-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg, #4a6cf7, #8c9eff);
+    border-radius: 3px;
+}
+
+.basic-stat-container {
+    margin-bottom: 2.5rem;
+    width: 100%;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .subject-title {
+        font-size: 1.1rem;
+        padding: 0.8rem 1rem;
+    }
+    
+    .subject-title i {
+        font-size: 0.9rem;
+    }
 } 

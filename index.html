@@ -170,7 +170,6 @@
                                 <option value="personal-trend">个人成绩变化趋势图</option>
                                 <option value="class-level-proportion">班级分数等级占比分析</option>
                                 <option value="class-average-trend">班级平均分变化趋势分析</option>
-                                <option value="cross-class-level-proportion">跨班级等级占比分析</option>
                                 <option value="cross-class-average-comparison">跨班级平均分对比分析</option>
                                 <option value="cross-class-score-level-proportion">跨班级分数等级占比分析</option>
                             </select>
@@ -409,58 +408,6 @@
                         <!-- 生成按钮 -->
                         <div class="analysis-actions">
                             <button id="generateCrossAverageComparisonBtn" class="btn primary-btn" disabled>生成对比分析</button>
-                        </div>
-                    </div>
-                    
-                    <!-- 跨班级等级占比分析选项区域 -->
-                    <div id="crossClassLevelProportionOptions" style="display: none;" class="analysis-options">
-                        <div class="options-row">
-                            <!-- 文件选择列表 -->
-                            <div class="options-column">
-                                <h3>选择成绩表：</h3>
-                                <div class="custom-dropdown">
-                                    <div class="dropdown-selected cross-level-dropdown-selected">
-                                        <span class="selected-text cross-level-selected-text">-- 请选择成绩表 --</span>
-                                        <span class="dropdown-arrow">▼</span>
-                                    </div>
-                                    <div class="dropdown-menu" id="crossLevelFileDropdownMenu">
-                                        <!-- 动态加载文件选项 -->
-                                    </div>
-                                </div>
-                                <div class="selected-files-container">
-                                    <h4>已选择：</h4>
-                                    <div id="crossLevelSelectedFilesList" class="selected-files-text">
-                                        <!-- 动态加载已选择的文件 -->
-                                        <div class="empty-selected">未选择任何成绩表</div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- 科目选择下拉框 -->
-                            <div class="options-column">
-                                <div class="subject-select-container">
-                                    <h3>选择科目：</h3>
-                                    <select id="crossLevelSubjectSelect" class="select-input" disabled>
-                                        <option value="">-- 请先选择成绩表 --</option>
-                                        <option value="all">全部科目</option>
-                                    </select>
-                                </div>
-                                
-                                <!-- 横坐标选择下拉框 -->
-                                <div class="x-axis-select-container" style="margin-top: 2rem;">
-                                    <h3>选择横坐标：</h3>
-                                    <select id="crossLevelXAxisSelect" class="select-input" disabled>
-                                        <option value="">-- 请先选择科目 --</option>
-                                        <option value="subject">科目</option>
-                                        <option value="class">班级</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 生成按钮 -->
-                        <div class="analysis-actions">
-                            <button id="generateCrossLevelProportionBtn" class="btn primary-btn" disabled>生成等级占比分析</button>
                         </div>
                     </div>
                     
