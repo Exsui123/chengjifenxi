@@ -739,3 +739,30 @@
     font-size: 0.9rem;
     color: #7f8c8d;
 }
+
+/* 单选文件选择相关样式 */
+.selected-file-info {
+    margin-top: 1rem;
+}
+
+.selected-file-info h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    display: inline-block;
+}
+
+.selected-file-detail {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    min-height: 40px;
+}
+
+.selected-file-item {
+    color: var(--text-color);
+    font-size: 0.9rem;
+}

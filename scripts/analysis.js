@@ -102,7 +102,7 @@ function initAnalysisModule() {
         }
     });
     
-    // 初始化自定义下拉框
+    // 初始化自定义下拉框（除了基础分析部分，它现在使用标准select）
     initCustomDropdown();
     
     // 科目选择变化事件
@@ -179,13 +179,10 @@ function initAnalysisModule() {
  */
 function initCustomDropdown() {
     // 初始化趋势分析下拉框
-    initDropdown('.dropdown-selected:not(.detail-dropdown-selected):not(.basic-dropdown-selected):not(.average-dropdown-selected):not(.cross-average-dropdown-selected):not(.cross-level-dropdown-selected):not(.cross-score-level-dropdown-selected)', 'fileDropdownMenu');
+    initDropdown('.dropdown-selected:not(.detail-dropdown-selected):not(.average-dropdown-selected):not(.cross-average-dropdown-selected):not(.cross-level-dropdown-selected):not(.cross-score-level-dropdown-selected)', 'fileDropdownMenu');
     
     // 初始化详情分析下拉框
     initDropdown('.detail-dropdown-selected', 'detailFileDropdownMenu');
-    
-    // 初始化基础指标分析下拉框
-    initDropdown('.basic-dropdown-selected', 'basicFileDropdownMenu');
     
     // 初始化班级平均分变化趋势分析下拉框
     initDropdown('.average-dropdown-selected', 'averageFileDropdownMenu');
@@ -198,9 +195,6 @@ function initCustomDropdown() {
     
     // 初始化跨班级分数等级占比分析下拉框
     initDropdown('.cross-score-level-dropdown-selected', 'crossScoreLevelFileDropdownMenu');
-    
-    // 加载所有文件数据到缓存中
-    loadAllFiles();
 }
 
 /**
@@ -2702,7 +2696,7 @@ function showBasicAnalysisOptions() {
         clearAnalysisResult();
         
         // 加载文件下拉选项
-        loadBasicFileDropdownItems();
+        loadBasicFileSelectOptions();
     }
 }
 
@@ -2715,94 +2709,81 @@ function hideBasicAnalysisOptions() {
         basicOptions.style.display = 'none';
     }
     
-    // 重置下拉框文本
-    const selectedText = document.querySelector('.basic-dropdown-selected .selected-text');
-    if (selectedText) {
-        selectedText.textContent = '-- 请选择成绩表 --';
+    // 重置下拉框选项
+    const basicFileSelect = document.getElementById('basicFileSelect');
+    if (basicFileSelect) {
+        basicFileSelect.value = '';
     }
     
     // 重置选择状态
     selectedFileIds = [];
-    updateBasicSelectedFilesList();
+    updateBasicSelectedFileInfo();
 }
 
 /**
  * 加载基础指标分析的文件下拉选项
  */
-function loadBasicFileDropdownItems() {
-    const dropdownMenu = document.getElementById('basicFileDropdownMenu');
-    if (!dropdownMenu) return;
+function loadBasicFileSelectOptions() {
+    const basicFileSelect = document.getElementById('basicFileSelect');
+    if (!basicFileSelect) return;
     
-    // 清空现有选项
-    dropdownMenu.innerHTML = '';
+    // 清空现有选项，只保留默认选项
+    basicFileSelect.innerHTML = '<option value="">-- 请选择成绩表 --</option>';
     
-    // 如果没有文件，显示提示
+    // 如果没有文件，禁用下拉框并显示提示
     if (allFilesCache.length === 0) {
-        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
+        basicFileSelect.disabled = true;
         return;
     }
     
     // 添加文件选项
     allFilesCache.forEach(file => {
-        const isSelected = selectedFileIds.includes(file.id);
-        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
-        
         // 格式化日期
         const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
         
-        const item = document.createElement('div');
-        item.className = itemClass;
-        item.dataset.fileId = file.id;
+        const option = document.createElement('option');
+        option.value = file.id;
+        option.textContent = `${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})`;
         
-        item.innerHTML = `
-            <div class="checkbox-indicator"></div>
-            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
-        `;
+        basicFileSelect.appendChild(option);
+    });
+    
+    // 启用下拉框
+    basicFileSelect.disabled = false;
+    
+    // 添加change事件监听器
+    basicFileSelect.addEventListener('change', function() {
+        const fileId = this.value;
         
-        // 添加点击事件
-        item.addEventListener('click', function() {
-            const fileId = this.dataset.fileId;
-            
-            if (selectedFileIds.includes(fileId)) {
-                // 取消选择
-                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
-                this.classList.remove('selected');
-            } else {
-                // 选择文件
-                selectedFileIds.push(fileId);
-                this.classList.add('selected');
-            }
-            
-            // 更新已选文件列表
-            updateBasicSelectedFilesList();
-            
-            // 更新科目选择列表
-            updateBasicSubjectOptions();
-            
-            // 更新生成按钮状态
-            updateGenerateBasicButtonState();
-        });
+        // 更新选择的文件ID
+        selectedFileIds = fileId ? [fileId] : [];
         
-        dropdownMenu.appendChild(item);
+        // 更新已选文件信息
+        updateBasicSelectedFileInfo();
+        
+        // 更新科目选择列表
+        updateBasicSubjectOptions();
+        
+        // 更新生成按钮状态
+        updateGenerateBasicButtonState();
     });
 }
 
 /**
- * 更新基础指标分析的已选择文件列表
+ * 更新基础指标分析的已选择文件信息
  */
-function updateBasicSelectedFilesList() {
-    const selectedFilesList = document.getElementById('basicSelectedFilesList');
-    if (!selectedFilesList) return;
+function updateBasicSelectedFileInfo() {
+    const selectedFileInfo = document.getElementById('basicSelectedFileInfo');
+    const selectedFileDetail = document.getElementById('basicSelectedFileDetail');
+    
+    if (!selectedFileInfo || !selectedFileDetail) return;
     
     // 清空现有内容
-    selectedFilesList.innerHTML = '';
+    selectedFileDetail.innerHTML = '';
     
     // 如果没有选择任何文件
     if (selectedFileIds.length === 0) {
-        const emptyElement = document.createElement('div');
-        emptyElement.className = 'empty-selected';
-        emptyElement.textContent = '未选择任何成绩表';
-        selectedFilesList.appendChild(emptyElement);
+        selectedFileInfo.style.display = 'none';
         
         // 禁用科目选择
         const subjectSelect = document.getElementById('basicSubjectSelect');
@@ -2813,20 +2794,23 @@ function updateBasicSelectedFilesList() {
         return;
     }
     
-    // 显示已选择的文件
-    selectedFileIds.forEach(fileId => {
-        const file = allFilesCache.find(f => f.id === fileId);
-        if (file) {
-            const fileElement = document.createElement('div');
-            fileElement.className = 'selected-file-item';
-            
-            // 格式化日期显示
-            let dateDisplay = file.date ? new Date(file.date).toLocaleDateString() : '未知日期';
-            
-            fileElement.textContent = `${file.name || '未命名'} (${dateDisplay})`;
-            selectedFilesList.appendChild(fileElement);
-        }
-    });
+    // 显示已选择的文件信息
+    const fileId = selectedFileIds[0]; // 由于是单选，所以只取第一个
+    const file = allFilesCache.find(f => f.id === fileId);
+    
+    if (file) {
+        // 格式化日期显示
+        let dateDisplay = file.date ? new Date(file.date).toLocaleDateString() : '未知日期';
+        
+        const fileElement = document.createElement('div');
+        fileElement.className = 'selected-file-item';
+        fileElement.textContent = `${file.name || '未命名'} (${dateDisplay})`;
+        
+        selectedFileDetail.appendChild(fileElement);
+        selectedFileInfo.style.display = 'block';
+    } else {
+        selectedFileInfo.style.display = 'none';
+    }
 }
 
 /**

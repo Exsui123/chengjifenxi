@@ -182,20 +182,14 @@
                             <!-- 文件选择列表 -->
                             <div class="options-column">
                                 <h3>选择成绩表：</h3>
-                                <div class="custom-dropdown">
-                                    <div class="dropdown-selected basic-dropdown-selected">
-                                        <span class="selected-text basic-selected-text">-- 请选择成绩表 --</span>
-                                        <span class="dropdown-arrow">▼</span>
-                                    </div>
-                                    <div class="dropdown-menu" id="basicFileDropdownMenu">
-                                        <!-- 动态加载文件选项 -->
-                                    </div>
-                                </div>
-                                <div class="selected-files-container">
+                                <select id="basicFileSelect" class="select-input">
+                                    <option value="">-- 请选择成绩表 --</option>
+                                    <!-- 动态加载文件选项 -->
+                                </select>
+                                <div id="basicSelectedFileInfo" class="selected-file-info" style="display: none;">
                                     <h4>已选择：</h4>
-                                    <div id="basicSelectedFilesList" class="selected-files-text">
+                                    <div id="basicSelectedFileDetail" class="selected-file-detail">
                                         <!-- 动态加载已选择的文件 -->
-                                        <div class="empty-selected">未选择任何成绩表</div>
                                     </div>
                                 </div>
                             </div>
