@@ -34,6 +34,8 @@
     margin-bottom: 1.5rem;
     position: relative;
     overflow: hidden;
+    align-items: center;
+    text-align: center;
 }
 
 .score-info-row::before {
@@ -55,6 +57,7 @@
     padding: 0.8rem;
     background-color: rgba(74, 108, 247, 0.05);
     border-radius: 10px;
+    justify-content: center;
 }
 
 .basic-info div {
@@ -71,6 +74,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 1.5rem;
+    justify-content: center;
 }
 
 .score-item {
@@ -80,6 +84,7 @@
     background-color: rgba(74, 108, 247, 0.05);
     padding: 0.8rem 1.2rem;
     border-radius: 10px;
+    position: relative;
 }
 
 .score-item strong {
@@ -88,19 +93,28 @@
 
 .score-item .rank-badge {
     margin-left: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
     .basic-info {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 0.8rem;
+        text-align: center;
     }
     
     .score-data {
         flex-direction: column;
         gap: 0.8rem;
+        align-items: center;
+    }
+    
+    .score-item {
+        justify-content: center;
     }
 }
 
@@ -163,12 +177,14 @@
 .rank-progress-container {
     margin-top: 1rem;
     width: 100%;
+    text-align: center;
 }
 
 .rank-progress-label {
     font-size: 0.85rem;
     color: #7f8c8d;
     margin-bottom: 5px;
+    text-align: center;
 }
 
 .rank-progress-bar {
@@ -176,6 +192,8 @@
     background-color: #ecf0f1;
     border-radius: 10px;
     overflow: hidden;
+    max-width: 80%;
+    margin: 0 auto;
 }
 
 .rank-progress {
