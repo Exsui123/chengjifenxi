@@ -202,12 +202,29 @@
     transition: width 1s ease-in-out;
 }
 
-/* 美化科目卡片 */
+/* 美化科目卡片 - 使用更通用的方法确保居中 */
 .subject-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
     gap: 1.5rem;
     margin-top: 1.5rem;
+    justify-content: center;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 优化特定数量科目卡片的显示 - 备选方案 */
+/* 当只有两个科目卡片时 */
+.subject-cards.two-cards {
+    grid-template-columns: repeat(2, minmax(220px, 300px));
+    max-width: 650px;
+}
+
+/* 当有三个科目卡片时 */
+.subject-cards.three-cards {
+    grid-template-columns: repeat(3, minmax(220px, 280px));
+    max-width: 900px;
 }
 
 /* 单科目卡片居中显示 */
@@ -816,5 +833,36 @@
     
     .single-subject .main-score {
         font-size: 2.5rem;
+    }
+}
+
+/* 优化三个科目卡片的显示样式 */
+.three-cards .subject-card {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+}
+
+.three-cards .subject-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* 为三个科目卡片设置不同的边框颜色 */
+.three-cards .subject-card:nth-child(1) {
+    border-left: 3px solid #3498db;
+}
+
+.three-cards .subject-card:nth-child(2) {
+    border-left: 3px solid #e74c3c;
+}
+
+.three-cards .subject-card:nth-child(3) {
+    border-left: 3px solid #27ae60;
+}
+
+@media (max-width: 768px) {
+    .three-cards {
+        grid-template-columns: 1fr;
+        max-width: 320px;
     }
 } 

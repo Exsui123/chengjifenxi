@@ -2146,7 +2146,7 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
             </div>
             <div class="subjects-detail">
                 <h4><i class="fas fa-book"></i> 各科成绩详情</h4>
-                <div class="subject-cards">
+                <div class="subject-cards${displaySubjects.length === 2 ? ' two-cards' : displaySubjects.length === 3 ? ' three-cards' : ''}">
                     ${generateSubjectCards(studentData, displaySubjects, classAvgScores, maxScores, fileData.data.students)}
                 </div>
             </div>
