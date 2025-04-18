@@ -7281,7 +7281,21 @@ function showStudentsByScoreRange(subject, studentData, scoreColumnIndex, minSco
         // 添加学生行
         filteredStudents.forEach((student, index) => {
             const studentName = nameColumnIndex !== -1 ? student[nameColumnIndex] : '未知';
-            const studentId = idColumnIndex !== -1 ? student[idColumnIndex] : '未知';
+            
+            // 防止学号列重复显示姓名
+            let studentId = '未知';
+            if (idColumnIndex !== -1 && idColumnIndex !== nameColumnIndex) {
+                studentId = student[idColumnIndex];
+            } else {
+                // 如果学号列索引等于姓名列索引或未找到，尝试在其他列查找可能的学号
+                for (let i = 0; i < student.length; i++) {
+                    if (i !== nameColumnIndex && student[i] && /^\d+$/.test(student[i])) {
+                        studentId = student[i];
+                        break;
+                    }
+                }
+            }
+            
             const score = parseFloat(student[scoreColumnIndex]).toFixed(1);
             const rank = index + 1;
             
@@ -7345,21 +7359,40 @@ function findStudentIdColumnInStudentData(studentData) {
     
     // 检查第一行的每一列
     const firstStudent = studentData[0];
+    
+    // 打印数据结构以便调试
+    console.log('学生数据结构:', firstStudent);
+    
     for (let i = 0; i < firstStudent.length; i++) {
         const cellValue = String(firstStudent[i]).toLowerCase();
+        console.log(`列 ${i} 内容: ${cellValue}`);
         
         // 如果单元格内容是学号关键词之一
         if (idKeywords.some(keyword => cellValue.includes(keyword))) {
+            console.log(`找到学号列: 索引 ${i}, 值 ${cellValue}`);
             return i;
         }
         
         // 如果是数字ID
         if (/^\d{5,12}$/.test(cellValue)) {
+            console.log(`找到数字ID列: 索引 ${i}, 值 ${cellValue}`);
             return i;
         }
     }
     
-    // 如果没有找到明显的学号列，假设第二列是学号（如果有至少两列）
+    // 查找名称为"学号"的列（不限于第一行）
+    if (studentData.length > 1) {
+        for (let i = 0; i < studentData[1].length; i++) {
+            // 检查第一行是否有"学号"这个值
+            if (firstStudent[i] === "学号") {
+                console.log(`在第一行找到明确的学号列标题: 索引 ${i}`);
+                return i;
+            }
+        }
+    }
+    
+    // 如果没有找到明显的学号列，默认返回第1列（索引为0的下一列）
+    console.log('未找到明确的学号列，默认使用第1列（索引0）作为姓名列，第2列（索引1）作为学号列');
     return firstStudent.length > 1 ? 1 : -1;
 }
 
