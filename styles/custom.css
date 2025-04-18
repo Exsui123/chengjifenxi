@@ -605,12 +605,8 @@
     background-color: rgba(255, 255, 255, 0.7);
     padding: 3px 8px;
     border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.indicator-card.clickable:hover::after {
     opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 /* 弹窗样式 */
