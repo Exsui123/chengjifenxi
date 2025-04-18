@@ -2085,8 +2085,8 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
     // 如果是单科模式，限制subjects只包含选中的科目
     const displaySubjects = isSingleSubjectMode ? [selectedSubject] : subjects;
     
-    // 设置单科/全部科目模式的HTML类名标识
-    const modeClass = isSingleSubjectMode ? 'single-subject-mode' : 'all-subjects-mode';
+    // 确定模式类名（单一科目/多科目）
+    const modeClass = isSingleSubjectMode ? 'single-subject-mode single-subject' : 'all-subjects-mode';
     
     // 计算总分和排名
     const totalScore = calculateTotalScore(studentData, subjects);

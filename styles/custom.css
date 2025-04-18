@@ -210,6 +210,23 @@
     margin-top: 1.5rem;
 }
 
+/* 单科目卡片居中显示 */
+.single-subject .subject-cards {
+    grid-template-columns: minmax(220px, 320px);
+    justify-content: center;
+}
+
+/* 单科目模式下的卡片增强样式 */
+.single-subject .subject-card {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    transform: scale(1.05);
+}
+
+.single-subject .subject-card:hover {
+    transform: translateY(-5px) scale(1.05);
+}
+
 .subject-card {
     background: white;
     border-radius: 12px;
@@ -756,5 +773,48 @@
     .student-list-table td {
         padding: 8px 10px;
         font-size: 0.9rem;
+    }
+}
+
+/* 单科目模式下的主分数和等级增强 */
+.single-subject .main-score {
+    font-size: 3rem;
+}
+
+.single-subject .score-level {
+    font-size: 0.85rem;
+    padding: 3px 10px;
+}
+
+.single-subject .score-stats {
+    padding: 15px;
+    margin-top: 10px;
+    border: 1px solid rgba(74, 108, 247, 0.1);
+    background-color: rgba(248, 249, 250, 0.8);
+}
+
+.single-subject .rank-progress-mini {
+    margin-top: 1.2rem;
+}
+
+/* 单科目模式下的图表增强 */
+.single-subject #barChartContainer {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* 确保单科目卡片在移动设备上也能很好地展示 */
+@media (max-width: 768px) {
+    .single-subject .subject-card {
+        transform: none;
+        padding: 1.2rem;
+    }
+    
+    .single-subject .subject-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .single-subject .main-score {
+        font-size: 2.5rem;
     }
 } 
