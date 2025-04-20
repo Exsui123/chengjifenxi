@@ -260,8 +260,9 @@
     align-items: center;
     padding: 0.75rem;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
     border-bottom: 1px solid var(--border-color);
+    user-select: none; /* 防止文本被选中 */
 }
 
 .dropdown-item:last-child {
@@ -269,13 +270,15 @@
 }
 
 .dropdown-item:hover {
-    background-color: rgba(74, 108, 247, 0.05);
+    background-color: rgba(74, 108, 247, 0.08);
+    transform: translateX(3px);
 }
 
 .dropdown-item.selected {
-    background-color: rgba(74, 108, 247, 0.1);
+    background-color: rgba(74, 108, 247, 0.12);
 }
 
+/* 优化复选框样式 */
 .dropdown-item .checkbox-indicator {
     width: 18px;
     height: 18px;
@@ -286,6 +289,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
 }
 
 .dropdown-item.selected .checkbox-indicator {
@@ -299,8 +304,34 @@
     font-size: 0.8rem;
 }
 
+/* 优化复选框和标签样式 */
+.dropdown-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+}
+
+.dropdown-item .checkbox-label {
+    cursor: pointer;
+    flex: 1;
+    margin-left: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover .checkbox-label {
+    color: var(--primary-color);
+}
+
+/* 下拉菜单选项文本 */
 .dropdown-item-text {
     flex: 1;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover .dropdown-item-text {
+    color: var(--primary-color);
 }
 
 /* 已选择的文件列表 - 文本形式 */
@@ -796,4 +827,62 @@
     font-weight: 600;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 增强文件列表项的视觉效果 */
+.dropdown-item.with-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border-bottom: 1px solid var(--border-color);
+    user-select: none; /* 防止文本被选中 */
+    position: relative;
+}
+
+.dropdown-item.with-checkbox:hover {
+    background-color: rgba(74, 108, 247, 0.08);
+    transform: translateX(5px);
+    padding-left: 1rem;
+}
+
+/* 复选框被选中时的列表项样式 */
+.dropdown-item.with-checkbox:has(input:checked) {
+    background-color: rgba(74, 108, 247, 0.12);
+    border-left: 4px solid var(--primary-color);
+    padding-left: 1rem;
+}
+
+/* 优化复选框和标签样式 */
+.dropdown-item.with-checkbox input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.dropdown-item.with-checkbox .checkbox-label {
+    cursor: pointer;
+    flex: 1;
+    font-size: 1rem;
+    transition: all 0.25s ease;
+    color: var(--text-color);
+}
+
+.dropdown-item.with-checkbox:hover .checkbox-label {
+    color: var(--primary-color);
+}
+
+/* 复选框被选中时的标签样式 */
+.dropdown-item.with-checkbox:has(input:checked) .checkbox-label {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* 为旧浏览器提供兼容性支持 */
+.dropdown-item.with-checkbox input:checked + .checkbox-label {
+    color: var(--primary-color);
+    font-weight: 500;
 }

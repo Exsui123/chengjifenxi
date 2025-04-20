@@ -340,60 +340,98 @@ function loadAllFiles() {
  * 加载文件下拉选项
  */
 function loadFileDropdownItems() {
-    const dropdownMenu = document.getElementById('fileDropdownMenu');
-    if (!dropdownMenu) return;
+    // 获取文件下拉菜单
+    const fileDropdownMenu = document.getElementById('fileDropdownMenu');
+    if (!fileDropdownMenu) return;
     
-    // 清空现有选项
-    dropdownMenu.innerHTML = '';
+    // 清空下拉菜单
+    fileDropdownMenu.innerHTML = '';
     
-    // 如果没有文件，显示提示
-    if (allFilesCache.length === 0) {
-        dropdownMenu.innerHTML = '<div class="dropdown-item disabled">没有可用的成绩表，请先上传数据</div>';
+    // 获取所有文件
+    const allFiles = getAllFilesFromStorage();
+    if (!allFiles || allFiles.length === 0) {
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'dropdown-item disabled';
+        emptyItem.textContent = '没有可用的成绩表文件';
+        fileDropdownMenu.appendChild(emptyItem);
         return;
     }
     
-    // 添加文件选项
-    allFilesCache.forEach(file => {
-        const isSelected = selectedFileIds.includes(file.id);
-        const itemClass = isSelected ? 'dropdown-item selected' : 'dropdown-item';
+    // 遍历文件，添加到下拉菜单
+    allFiles.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'dropdown-item with-checkbox';
         
-        // 格式化日期
-        const fileDate = file.date ? new Date(file.date).toLocaleDateString('zh-CN') : '无日期';
+        // 创建复选框
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'file-checkbox';
+        checkbox.setAttribute('data-file-id', file.id);
+        checkbox.id = `file-checkbox-${file.id}`;
         
-        const item = document.createElement('div');
-        item.className = itemClass;
-        item.dataset.fileId = file.id;
+        // 如果文件已经被选中，设置复选框为选中状态
+        if (selectedFileIds.includes(file.id)) {
+            checkbox.checked = true;
+        }
         
-        item.innerHTML = `
-            <div class="checkbox-indicator"></div>
-            <div class="dropdown-item-text">${file.name || '未命名文件'} (${fileDate}, ${file.class || '未指定班级'})</div>
-        `;
+        // 创建标签
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.textContent = `${file.name} (${file.class || '未知班级'})`;
+        label.htmlFor = checkbox.id;
         
-        // 添加点击事件
-        item.addEventListener('click', function() {
-            const fileId = this.dataset.fileId;
+        // 添加到文件项
+        fileItem.appendChild(checkbox);
+        fileItem.appendChild(label);
+        
+        // 添加复选框变化事件
+        checkbox.addEventListener('change', function() {
+            const fileId = this.getAttribute('data-file-id');
             
-            if (selectedFileIds.includes(fileId)) {
-                // 取消选择
-                selectedFileIds = selectedFileIds.filter(id => id !== fileId);
-                this.classList.remove('selected');
+            if (this.checked) {
+                // 添加到已选择列表
+                if (!selectedFileIds.includes(fileId)) {
+                    selectedFileIds.push(fileId);
+                }
             } else {
-                // 选择文件
-                selectedFileIds.push(fileId);
-                this.classList.add('selected');
+                // 从已选择列表中移除
+                const index = selectedFileIds.indexOf(fileId);
+                if (index !== -1) {
+                    selectedFileIds.splice(index, 1);
+                }
             }
             
-            // 更新已选文件列表
+            // 更新已选择的文件列表
             updateSelectedFilesList();
             
-            // 更新科目选择列表
+            // 更新科目选择下拉框
             updateSubjectOptions();
+            
+            // 根据已选择的文件和科目，更新学生选择下拉框
+            updateStudentOptions();
             
             // 更新生成按钮状态
             updateGenerateButtonState();
         });
         
-        dropdownMenu.appendChild(item);
+        // 为整个列表项添加点击事件，实现点击整行选择或取消选择
+        fileItem.addEventListener('click', function(event) {
+            // 只有当点击的不是复选框本身时，才触发复选框的切换
+            if (event.target !== checkbox) {
+                // 切换复选框的状态
+                checkbox.checked = !checkbox.checked;
+                
+                // 手动触发复选框的change事件
+                const changeEvent = new Event('change');
+                checkbox.dispatchEvent(changeEvent);
+                
+                // 防止事件冒泡，避免重复处理
+                event.stopPropagation();
+            }
+        });
+        
+        // 添加到下拉菜单
+        fileDropdownMenu.appendChild(fileItem);
     });
 }
 
@@ -6570,19 +6608,30 @@ function loadCrossScoreLevelFileDropdownItems() {
         checkbox.className = 'file-checkbox';
         checkbox.setAttribute('data-file-id', file.id);
         checkbox.setAttribute('data-file-class', fileClass);
+        checkbox.id = `cross-score-level-file-${file.id}`;
         
-        // 添加复选框变化事件
-        checkbox.addEventListener('change', function() {
-            const fileId = this.getAttribute('data-file-id');
-            const fileClass = this.getAttribute('data-file-class');
+        // 创建标签
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.textContent = `${file.name} (${file.class || '未知班级'})`;
+        label.htmlFor = checkbox.id;
+        
+        // 添加到文件项
+        fileItem.appendChild(checkbox);
+        fileItem.appendChild(label);
+        
+        // 添加复选框点击处理函数
+        const handleCheckboxChange = function() {
+            const fileId = checkbox.getAttribute('data-file-id');
+            const fileClass = checkbox.getAttribute('data-file-class');
             
-            if (this.checked) {
+            if (checkbox.checked) {
                 // 如果该班级已有选中的成绩表，取消之前的选择
                 if (fileClass && selectedClasses.has(fileClass)) {
                     // 查找同班级的已选文件
                     const checkboxes = document.querySelectorAll('#crossScoreLevelFileDropdownMenu .file-checkbox');
                     checkboxes.forEach(cb => {
-                        if (cb !== this && cb.getAttribute('data-file-class') === fileClass && cb.checked) {
+                        if (cb !== checkbox && cb.getAttribute('data-file-class') === fileClass && cb.checked) {
                             cb.checked = false;
                             // 移除该文件ID
                             const index = selectedFileIds.indexOf(cb.getAttribute('data-file-id'));
@@ -6630,16 +6679,26 @@ function loadCrossScoreLevelFileDropdownItems() {
             
             // 更新生成按钮状态
             updateCrossScoreLevelProportionButtonState();
+        };
+        
+        // 为复选框添加变化事件监听
+        checkbox.addEventListener('change', handleCheckboxChange);
+        
+        // 为整个列表项添加点击事件，实现点击整行选择或取消选择
+        fileItem.addEventListener('click', function(event) {
+            // 只有当点击的不是复选框本身时，才触发复选框的切换
+            if (event.target !== checkbox) {
+                // 重要：切换复选框的状态
+                checkbox.checked = !checkbox.checked;
+                
+                // 手动触发复选框的change事件
+                const changeEvent = new Event('change');
+                checkbox.dispatchEvent(changeEvent);
+                
+                // 防止事件冒泡，避免重复处理
+                event.stopPropagation();
+            }
         });
-        
-        // 创建标签
-        const label = document.createElement('label');
-        label.className = 'checkbox-label';
-        label.textContent = `${file.name} (${file.class || '未知班级'})`;
-        
-        // 添加到文件项
-        fileItem.appendChild(checkbox);
-        fileItem.appendChild(label);
         
         // 添加到下拉菜单
         dropdownMenu.appendChild(fileItem);
