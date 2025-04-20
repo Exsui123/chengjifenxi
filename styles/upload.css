@@ -29,6 +29,84 @@
     margin-top: 0.5rem;
 }
 
+/* 模板下载样式 */
+.template-download {
+    text-align: center;
+    padding: 0.8rem;
+    background-color: rgba(248, 249, 250, 0.8);
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    border: 1px solid #e0e0e0;
+}
+
+.template-download p {
+    margin-bottom: 0.5rem;
+    color: var(--secondary-color);
+}
+
+.template-link {
+    color: var(--primary-color);
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-bottom: 1px dashed var(--primary-color);
+    padding-bottom: 2px;
+}
+
+.template-link:hover {
+    color: #3a57e8;
+    border-bottom: 1px solid #3a57e8;
+}
+
+.template-hint {
+    font-size: 0.85rem;
+    color: #888;
+    font-style: italic;
+}
+
+/* 警告提示样式 */
+.template-warning {
+    font-size: 0.95rem;
+    background-color: #fff2f0;
+    border-left: 4px solid #ff4d4f;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(255, 77, 79, 0.2);
+    animation: warning-pulse 2s infinite;
+}
+
+@keyframes warning-pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* 模板下载高亮效果 */
+.template-download.highlight {
+    animation: pulse 1.5s infinite;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px rgba(74, 108, 247, 0.5);
+}
+
+@keyframes pulse {
+    0% {
+        background-color: rgba(248, 249, 250, 0.8);
+    }
+    50% {
+        background-color: rgba(74, 108, 247, 0.1);
+    }
+    100% {
+        background-color: rgba(248, 249, 250, 0.8);
+    }
+}
+
 /* 文件信息样式 */
 .file-info {
     background-color: rgba(74, 108, 247, 0.05);

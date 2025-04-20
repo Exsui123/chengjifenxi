@@ -49,6 +49,13 @@
                             <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
                         </div>
                         
+                        <!-- 添加模板下载功能 -->
+                        <div class="template-download">
+                            <p>需要标准格式？<a href="examples/成绩导入模板.xlsx" download="成绩导入模板.xlsx" class="template-link">下载Excel模板</a></p>
+                            <p class="template-hint">模板包含标准格式：学号、姓名、语文、数学、英语</p>
+                            <p class="template-warning">注意：请务必使用此模板上传成绩表，否则系统可能无法正确识别数据！</p>
+                        </div>
+                        
                         <div class="file-info" id="fileInfo" style="display: none;">
                             <p>文件名: <span id="fileName"></span></p>
                             <p>文件大小: <span id="fileSize"></span></p>

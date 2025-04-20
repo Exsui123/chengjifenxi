@@ -14,6 +14,9 @@ let rowsPerPage = 10;
 // 总页数
 let totalPages = 1;
 
+// 定义预期的表头
+const expectedHeaders = ['学号', '姓名', '语文', '数学', '英语'];
+
 // 等待DOM完全加载后执行
 document.addEventListener('DOMContentLoaded', function() {
     initUploadModule();
@@ -407,32 +410,56 @@ function goToPage(pageNumber) {
 }
 
 /**
- * 验证数据格式，检查是否符合系统要求
- * @param {Array} headers - 数据表头
+ * 验证数据格式
+ * @param {Array} headers - 表头数组
  */
 function validateDataFormat(headers) {
-    // 简单检查：至少有3个列，第一列应该包含学生ID或姓名
-    if (headers.length < 3) {
-        showMessage('数据格式可能不正确，至少需要包含学生信息和两个学科', 'error');
+    if (!headers || headers.length === 0) {
+        showMessage('文件缺少表头行', 'warning');
         return false;
     }
     
-    // 检查是否包含常见学科名称（简单判断）
-    const commonSubjects = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治'];
-    let foundSubjects = 0;
-    
-    headers.forEach(header => {
-        if (commonSubjects.some(subject => header && header.includes(subject))) {
-            foundSubjects++;
+    // 检查是否包含预期的必要列
+    let missingColumns = [];
+    expectedHeaders.forEach(header => {
+        if (!headers.includes(header)) {
+            missingColumns.push(header);
         }
     });
     
-    if (foundSubjects === 0) {
-        showMessage('未检测到常见学科名称，请确认数据格式是否正确', 'info');
+    if (missingColumns.length > 0) {
+        showMessage(`文件格式不完整，缺少以下列: ${missingColumns.join(', ')}，建议下载使用标准模板`, 'warning');
+        
+        // 高亮显示模板下载区域
+        const templateDownload = document.querySelector('.template-download');
+        if (templateDownload) {
+            templateDownload.classList.add('highlight');
+            setTimeout(() => {
+                templateDownload.classList.remove('highlight');
+            }, 3000);
+        }
         return false;
     }
     
-    showMessage(`成功检测到${foundSubjects}个学科`, 'success');
+    // 检查学号格式
+    const studentIdColIndex = headers.indexOf('学号');
+    if (studentIdColIndex !== -1 && parsedData.length > 1) {
+        // 检查前5行数据的学号格式
+        const rowsToCheck = Math.min(5, parsedData.length - 1);
+        for (let i = 1; i <= rowsToCheck; i++) {
+            const row = parsedData[i];
+            if (row && row[studentIdColIndex]) {
+                const studentId = String(row[studentIdColIndex]);
+                // 学号应该是数字格式，可以有前导零
+                if (!/^\d{1,2}$/.test(studentId)) {
+                    showMessage('学号格式不正确，应为01、02等形式的数字', 'warning');
+                    return false;
+                }
+            }
+        }
+    }
+    
+    showMessage('文件格式验证通过', 'success');
     return true;
 }
 
