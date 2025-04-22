@@ -886,3 +886,72 @@
     color: var(--primary-color);
     font-weight: 500;
 }
+
+/* 总结和建议模块样式 */
+.analysis-summary {
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px 25px;
+    margin-top: 30px;
+    margin-bottom: 40px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #4a6cf7;
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+}
+
+.summary-title, .advice-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+}
+
+.summary-title i, .advice-title i {
+    margin-right: 10px;
+    color: #4a6cf7;
+}
+
+.summary-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: #444;
+    margin-bottom: 20px;
+}
+
+.advice-list {
+    padding-left: 20px;
+    margin-top: 15px;
+}
+
+.advice-list li {
+    margin-bottom: 10px;
+    line-height: 1.6;
+    color: #444;
+    position: relative;
+    padding-left: 5px;
+}
+
+.advice-list li strong {
+    color: #2c3e50;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+    .analysis-summary {
+        padding: 15px;
+        margin-top: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .summary-title, .advice-title {
+        font-size: 1.1rem;
+    }
+    
+    .summary-text {
+        font-size: 0.9rem;
+    }
+}

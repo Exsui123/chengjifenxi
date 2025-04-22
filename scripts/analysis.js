@@ -3143,6 +3143,35 @@ function createSubjectStatCard(subject, studentData, columnIndex, passScore, goo
     indicatorsContainer.appendChild(bottomRow);
     
     card.appendChild(indicatorsContainer);
+    
+    // 生成文字总结和建议
+    if (typeof generateSubjectSummary === 'function') {
+        try {
+            const summaryElement = generateSubjectSummary(
+                subject, 
+                scores, 
+                maxScore, 
+                minScore, 
+                avgScore, 
+                excellentCount, 
+                goodCount, 
+                passCount, 
+                failCount, 
+                totalCount, 
+                excellentRate, 
+                goodRate, 
+                passRate, 
+                failRate, 
+                passScore, 
+                goodScore, 
+                excellentScore
+            );
+            card.appendChild(summaryElement);
+        } catch (error) {
+            console.error('生成总结时出错:', error);
+        }
+    }
+    
     return card;
 }
 
