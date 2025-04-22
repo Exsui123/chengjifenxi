@@ -1209,6 +1209,13 @@ function generateTrendChart(student, filesData) {
         });
         
         console.log('趋势图已生成');
+        
+        // 添加成绩趋势总结和优化建议
+        if (window.TrendAnalysis && typeof window.TrendAnalysis.generateTrendSummaryAndSuggestions === 'function') {
+            window.TrendAnalysis.generateTrendSummaryAndSuggestions(student, scoreData, selectedSubject);
+        } else {
+            console.error('趋势分析模块未正确加载，无法生成总结和优化建议');
+        }
     } catch (error) {
         console.error('创建图表时出错:', error);
         const analysisResult = document.getElementById('analysisResult');
