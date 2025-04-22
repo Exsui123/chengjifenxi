@@ -303,4 +303,367 @@ function generatePersonalAdvice(studentName, strongSubjects, weakSubjects, ranki
     }
     
     return adviceList;
-} 
+}
+
+/**
+ * 生成成绩总结和优化建议
+ * @param {Object} studentData - 学生数据
+ * @param {Array} subjects - 科目列表
+ * @param {Object} classAvgScores - 班级平均分
+ * @param {Object} maxScores - 最高分
+ * @param {Array} allStudents - 所有学生数据
+ * @param {Object} thresholds - 分数线设置(及格线、良好线、优秀线)
+ * @returns {Object} 包含总结和建议的对象
+ */
+function generateScoreSummary(studentData, subjects, classAvgScores, maxScores, allStudents, thresholds) {
+    // 获取总分、平均分和排名信息
+    const totalScore = calculateTotalScore(studentData, subjects);
+    const avgScore = (totalScore / subjects.length).toFixed(2);
+    const ranking = calculateRanking(studentData, allStudents, subjects);
+    const totalStudents = allStudents.length;
+    const rankPercentage = ((ranking / totalStudents) * 100).toFixed(1);
+
+    // 分析科目优势和劣势
+    const strengthsAndWeaknesses = analyzeStrengthsAndWeaknesses(studentData, subjects, classAvgScores);
+    
+    // 确定学生的总体表现水平
+    const overallPerformance = determineOverallPerformance(rankPercentage, strengthsAndWeaknesses);
+    
+    // 生成科目改进建议
+    const subjectSuggestions = generateSubjectSuggestions(
+        studentData, 
+        subjects, 
+        classAvgScores, 
+        maxScores, 
+        thresholds
+    );
+    
+    // 生成学习策略建议
+    const studyStrategies = generateStudyStrategies(strengthsAndWeaknesses, overallPerformance);
+    
+    // 整合成绩总结
+    const summary = {
+        overall: generateOverallSummary(studentData.name, totalScore, avgScore, ranking, totalStudents, overallPerformance),
+        strengths: strengthsAndWeaknesses.strengths,
+        weaknesses: strengthsAndWeaknesses.weaknesses,
+        subjectSuggestions: subjectSuggestions,
+        studyStrategies: studyStrategies
+    };
+    
+    return summary;
+}
+
+/**
+ * 分析学生的优势科目和劣势科目
+ * @param {Object} studentData - 学生数据
+ * @param {Array} subjects - 科目列表
+ * @param {Object} classAvgScores - 班级平均分
+ * @returns {Object} 优势和劣势科目分析
+ */
+function analyzeStrengthsAndWeaknesses(studentData, subjects, classAvgScores) {
+    const strengths = [];
+    const weaknesses = [];
+    
+    // 计算学生各科目与班级平均分的差距
+    const scoreDifferences = {};
+    subjects.forEach(subject => {
+        const studentScore = studentData.scores[subject] || 0;
+        const classAvg = classAvgScores[subject] || 0;
+        scoreDifferences[subject] = studentScore - classAvg;
+    });
+    
+    // 按差距排序科目
+    const sortedSubjects = [...subjects].sort((a, b) => scoreDifferences[b] - scoreDifferences[a]);
+    
+    // 前1/3为优势科目
+    const strengthCount = Math.ceil(subjects.length / 3);
+    for (let i = 0; i < strengthCount && i < sortedSubjects.length; i++) {
+        const subject = sortedSubjects[i];
+        const diff = scoreDifferences[subject];
+        if (diff > 0) { // 只有高于平均分的才算优势
+            strengths.push({
+                subject: subject,
+                score: studentData.scores[subject] || 0,
+                diffFromAvg: diff.toFixed(2)
+            });
+        }
+    }
+    
+    // 后1/3为劣势科目
+    const startIdx = Math.max(sortedSubjects.length - strengthCount, 0);
+    for (let i = startIdx; i < sortedSubjects.length; i++) {
+        const subject = sortedSubjects[i];
+        const diff = scoreDifferences[subject];
+        if (diff < 0) { // 只有低于平均分的才算劣势
+            weaknesses.push({
+                subject: subject,
+                score: studentData.scores[subject] || 0,
+                diffFromAvg: diff.toFixed(2)
+            });
+        }
+    }
+    
+    return { strengths, weaknesses };
+}
+
+/**
+ * 确定学生的总体表现水平
+ * @param {number} rankPercentage - 排名百分比
+ * @param {Object} strengthsAndWeaknesses - 优势和劣势科目
+ * @returns {string} 表现水平描述
+ */
+function determineOverallPerformance(rankPercentage, strengthsAndWeaknesses) {
+    // 根据排名百分比确定基础表现
+    let performance = '';
+    if (rankPercentage <= 10) {
+        performance = '优秀';
+    } else if (rankPercentage <= 30) {
+        performance = '良好';
+    } else if (rankPercentage <= 70) {
+        performance = '中等';
+    } else {
+        performance = '需要加强';
+    }
+    
+    // 根据优势和劣势科目数量调整描述
+    const { strengths, weaknesses } = strengthsAndWeaknesses;
+    
+    if (strengths.length > 0 && weaknesses.length === 0) {
+        performance += '，各科均衡发展';
+    } else if (strengths.length > 0 && weaknesses.length > 0) {
+        performance += '，发展不均衡';
+    } else if (strengths.length === 0 && weaknesses.length > 0) {
+        performance += '，需全面提升';
+    }
+    
+    return performance;
+}
+
+/**
+ * 生成科目改进建议
+ * @param {Object} studentData - 学生数据
+ * @param {Array} subjects - 科目列表
+ * @param {Object} classAvgScores - 班级平均分
+ * @param {Object} maxScores - 最高分
+ * @param {Object} thresholds - 分数线设置
+ * @returns {Array} 科目建议列表
+ */
+function generateSubjectSuggestions(studentData, subjects, classAvgScores, maxScores, thresholds) {
+    const suggestions = [];
+    
+    subjects.forEach(subject => {
+        const score = studentData.scores[subject] || 0;
+        const classAvg = classAvgScores[subject] || 0;
+        const maxScore = maxScores[subject] || 0;
+        const diffFromAvg = score - classAvg;
+        
+        let suggestion = '';
+        
+        // 根据分数与及格线、良好线和优秀线的关系生成建议
+        if (score < thresholds.passScore) {
+            suggestion = `${subject}成绩未达到及格线，需要进行基础知识查漏补缺，建立学科学习兴趣，制定每日学习计划。`;
+        } else if (score < thresholds.goodScore) {
+            suggestion = `${subject}成绩已及格但低于良好线，建议巩固基础知识，加强关键概念理解，多做典型习题。`;
+        } else if (score < thresholds.excellentScore) {
+            suggestion = `${subject}成绩良好，可通过深入学习难点内容和提高解题效率，向优秀水平冲刺。`;
+        } else {
+            suggestion = `${subject}成绩优秀，建议保持学习状态，可尝试拓展学习和挑战更高难度的题目。`;
+        }
+        
+        // 根据与班级平均分的差距补充建议
+        if (diffFromAvg <= -10) {
+            suggestion += `与班级平均分差距较大，建议及时找老师进行个别辅导。`;
+        } else if (diffFromAvg < 0) {
+            suggestion += `略低于班级平均水平，通过小组学习可以有效提高。`;
+        } else if (diffFromAvg <= 5) {
+            suggestion += `已达到班级平均水平，继续努力可以取得更好成绩。`;
+        } else if (diffFromAvg <= 15) {
+            suggestion += `超过班级平均水平，可以帮助其他同学，巩固自身知识。`;
+        } else {
+            suggestion += `大幅超过班级平均水平，可考虑参加学科竞赛拓展能力。`;
+        }
+        
+        // 计算与最高分的差距，补充建议
+        const diffFromMax = maxScore - score;
+        if (diffFromMax > 20) {
+            suggestion += `与最高分尚有较大差距，可分析优秀同学的学习方法。`;
+        } else if (diffFromMax > 10) {
+            suggestion += `接近班级最高水平，注意查缺补漏可以更进一步。`;
+        } else if (diffFromMax > 0) {
+            suggestion += `已接近班级最高水平，保持稳定发挥即可。`;
+        } else {
+            suggestion += `恭喜获得班级最高分，继续保持优秀！`;
+        }
+        
+        suggestions.push({
+            subject: subject,
+            score: score,
+            suggestion: suggestion
+        });
+    });
+    
+    return suggestions;
+}
+
+/**
+ * 生成学习策略建议
+ * @param {Object} strengthsAndWeaknesses - 优势和劣势科目
+ * @param {string} overallPerformance - 总体表现
+ * @returns {Array} 学习策略建议列表
+ */
+function generateStudyStrategies(strengthsAndWeaknesses, overallPerformance) {
+    const strategies = [];
+    const { strengths, weaknesses } = strengthsAndWeaknesses;
+    
+    // 添加时间管理建议
+    if (weaknesses.length > 0) {
+        strategies.push({
+            title: "合理分配学习时间",
+            content: `建议根据科目难度调整学习时间分配，对${weaknesses.map(w => w.subject).join('、')}等薄弱科目适当增加学习时间，确保全面发展。`
+        });
+    }
+    
+    // 添加学习方法建议
+    if (overallPerformance.includes('优秀')) {
+        strategies.push({
+            title: "保持高效学习方法",
+            content: "总结并坚持当前有效的学习方法，可尝试拓展性学习和知识融合，提高综合分析能力。"
+        });
+    } else if (overallPerformance.includes('良好')) {
+        strategies.push({
+            title: "优化学习效率",
+            content: "建议采用番茄工作法提高专注度，做好课前预习和课后复习，形成良好的学习闭环。"
+        });
+    } else if (overallPerformance.includes('中等')) {
+        strategies.push({
+            title: "建立系统学习计划",
+            content: "建议制定每周详细学习计划，重视基础知识点的掌握，多做针对性练习，培养解题思路。"
+        });
+    } else {
+        strategies.push({
+            title: "基础能力提升",
+            content: "建议从基础知识入手，制定每日学习目标，配合错题集管理，逐步建立学科自信心。"
+        });
+    }
+    
+    // 添加学习资源建议
+    strategies.push({
+        title: "利用优质学习资源",
+        content: "推荐使用线上学习平台辅助学习，参与小组讨论交流解题思路，必要时寻求老师个别辅导。"
+    });
+    
+    // 添加心态建议
+    strategies.push({
+        title: "保持积极学习心态",
+        content: "学习过程中保持积极心态，适当放松减压，将目标分解为小目标，及时给自己正面鼓励。"
+    });
+    
+    return strategies;
+}
+
+/**
+ * 生成总体成绩总结
+ * @param {string} name - 学生姓名
+ * @param {number} totalScore - 总分
+ * @param {number} avgScore - 平均分
+ * @param {number} ranking - 排名
+ * @param {number} totalStudents - 总学生数
+ * @param {string} performance - 表现水平
+ * @returns {string} 总体总结
+ */
+function generateOverallSummary(name, totalScore, avgScore, ranking, totalStudents, performance) {
+    const rankPercentage = ((ranking / totalStudents) * 100).toFixed(1);
+    
+    return `${name}同学的总成绩为${totalScore}分，平均分${avgScore}分，在班级${totalStudents}名同学中排名第${ranking}位，处于前${rankPercentage}%，总体表现${performance}。`;
+}
+
+/**
+ * 渲染成绩总结和建议
+ * @param {Object} summary - 成绩总结对象
+ * @returns {string} HTML内容
+ */
+function renderScoreSummary(summary) {
+    // 生成优势科目列表HTML
+    let strengthsHtml = '';
+    if (summary.strengths.length > 0) {
+        strengthsHtml = summary.strengths.map(item => 
+            `<li>${item.subject}（${item.score}分，高出平均分${item.diffFromAvg}分）</li>`
+        ).join('');
+    } else {
+        strengthsHtml = '<li>暂无明显优势科目，建议全面提升学习能力</li>';
+    }
+    
+    // 生成劣势科目列表HTML
+    let weaknessesHtml = '';
+    if (summary.weaknesses.length > 0) {
+        weaknessesHtml = summary.weaknesses.map(item => 
+            `<li>${item.subject}（${item.score}分，低于平均分${Math.abs(item.diffFromAvg)}分）</li>`
+        ).join('');
+    } else {
+        weaknessesHtml = '<li>没有明显的劣势科目，各科发展均衡</li>';
+    }
+    
+    // 生成科目建议HTML
+    const subjectSuggestionsHtml = summary.subjectSuggestions.map(item => 
+        `<div class="subject-suggestion">
+            <h5>${item.subject}（${item.score}分）</h5>
+            <p>${item.suggestion}</p>
+        </div>`
+    ).join('');
+    
+    // 生成学习策略HTML
+    const studyStrategiesHtml = summary.studyStrategies.map(item => 
+        `<div class="strategy-item">
+            <h5><i class="fas fa-lightbulb"></i> ${item.title}</h5>
+            <p>${item.content}</p>
+        </div>`
+    ).join('');
+    
+    // 拼接完整HTML
+    return `
+        <div class="score-summary-section">
+            <div class="summary-header">
+                <h4><i class="fas fa-chart-line"></i> 成绩总结分析</h4>
+            </div>
+            <div class="overall-summary">
+                <p>${summary.overall}</p>
+            </div>
+            <div class="summary-details">
+                <div class="summary-column">
+                    <div class="summary-card strengths-card">
+                        <h4><i class="fas fa-star"></i> 优势科目</h4>
+                        <ul class="strengths-list">
+                            ${strengthsHtml}
+                        </ul>
+                    </div>
+                    <div class="summary-card weaknesses-card">
+                        <h4><i class="fas fa-exclamation-triangle"></i> 需加强科目</h4>
+                        <ul class="weaknesses-list">
+                            ${weaknessesHtml}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="subject-suggestions-section">
+                <h4><i class="fas fa-chalkboard-teacher"></i> 科目具体建议</h4>
+                <div class="subject-suggestions">
+                    ${subjectSuggestionsHtml}
+                </div>
+            </div>
+            
+            <div class="study-strategies-section">
+                <h4><i class="fas fa-brain"></i> 学习策略建议</h4>
+                <div class="study-strategies">
+                    ${studyStrategiesHtml}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 导出模块函数
+window.ScoreSummary = {
+    generateScoreSummary,
+    renderScoreSummary
+}; 

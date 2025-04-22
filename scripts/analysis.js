@@ -2154,6 +2154,22 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
     const radarChartNote = isSingleSubjectMode ? 
         '<div class="chart-note">注意：选择全部科目时才会显示成绩雷达图</div>' : '';
     
+    // 获取分数线设置
+    const thresholds = getThresholds();
+    
+    // 生成成绩总结和优化建议
+    const scoreSummary = window.ScoreSummary.generateScoreSummary(
+        studentData, 
+        subjects, 
+        classAvgScores, 
+        maxScores, 
+        fileData.data.students, 
+        thresholds
+    );
+    
+    // 渲染成绩总结HTML
+    const summaryHtml = window.ScoreSummary.renderScoreSummary(scoreSummary);
+    
     analysisResult.innerHTML = `
         <div class="detail-title">${studentData.name} - 成绩详情分析</div>
         <div class="detail-analysis-container ${modeClass}">
@@ -2200,6 +2216,9 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
                     <canvas id="barChart"></canvas>
                 </div>
             </div>
+            
+            <!-- 成绩总结和优化建议 -->
+            ${summaryHtml}
         </div>
     `;
     
