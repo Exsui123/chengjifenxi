@@ -2459,6 +2459,25 @@ function renderBarChart(studentData, subjects, classAvgScores) {
                 y: {
                     beginAtZero: true
                 }
+            },
+            plugins: {
+                datalabels: {
+                    display: true,
+                    color: '#000',
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: function(value) {
+                        // 将数值格式化为只保留一位小数
+                        return value.toFixed(1);
+                    },
+                    font: {
+                        weight: 'bold',
+                        size: 11
+                    },
+                    padding: {
+                        top: 5
+                    }
+                }
             }
         }
     });
