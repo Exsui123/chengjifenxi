@@ -870,4 +870,574 @@ function translateLevel(level) {
 }
 
 // 扩展导出模块函数
-window.TrendAnalysis.generateLevelProportionSummaryAndSuggestions = generateLevelProportionSummaryAndSuggestions; 
+window.TrendAnalysis.generateLevelProportionSummaryAndSuggestions = generateLevelProportionSummaryAndSuggestions;
+window.TrendAnalysis.generateClassAverageTrendSummaryAndSuggestions = generateClassAverageTrendSummaryAndSuggestions;
+window.TrendAnalysis.renderClassAverageTrendSummary = renderClassAverageTrendSummary;
+
+/**
+ * 为班级平均分变化趋势分析生成总结和优化建议
+ * @param {Array} filesData - 文件数据数组
+ * @param {string} selectedSubject - 选择的科目
+ * @param {Array} averageScores - 平均分数据数组
+ */
+function generateClassAverageTrendSummaryAndSuggestions(filesData, selectedSubject, averageScores) {
+    console.log('开始生成班级平均分变化趋势总结和优化建议');
+    if (!filesData || filesData.length < 2) {
+        console.warn('文件数据不足，无法生成趋势总结');
+        return null;
+    }
+
+    // 获取分数线设置
+    const thresholds = getThresholds();
+    
+    // 分析结果对象
+    const analysis = {
+        overview: {
+            subject: selectedSubject,
+            trend: 'stable', // 可能的值: improving, declining, stable, fluctuating
+            averageChange: 0,
+            totalChange: 0,
+            initialScore: 0,
+            finalScore: 0,
+            maxScore: 0,
+            minScore: 0,
+            volatility: 'low' // 可能的值: low, medium, high
+        },
+        trends: [],
+        suggestions: []
+    };
+    
+    // 准备数据
+    let validScores = [];
+    let examNames = [];
+    
+    if (selectedSubject === 'all') {
+        // 所有科目的情况下，需要分别计算每个科目的趋势
+        // 获取所有科目
+        const allSubjects = new Set();
+        filesData.forEach(fileData => {
+            const subjects = getSubjectsFromFile(fileData);
+            subjects.forEach(subject => allSubjects.add(subject));
+        });
+        
+        // 分析每个科目的趋势
+        allSubjects.forEach(subject => {
+            const subjectData = [];
+            const subjectExamNames = [];
+            
+            // 计算每个文件中该科目的平均分
+            filesData.forEach(fileData => {
+                // 获取科目列索引
+                const headers = fileData.data[0];
+                const subjectIndex = headers.findIndex(header => header === subject);
+                
+                // 如果找到该科目，计算平均分
+                if (subjectIndex !== -1) {
+                    let sum = 0;
+                    let count = 0;
+                    
+                    for (let i = 1; i < fileData.data.length; i++) {
+                        const row = fileData.data[i];
+                        if (row[subjectIndex] !== undefined && row[subjectIndex] !== null && !isNaN(row[subjectIndex])) {
+                            sum += parseFloat(row[subjectIndex]);
+                            count++;
+                        }
+                    }
+                    
+                    // 计算平均分
+                    if (count > 0) {
+                        const average = (sum / count).toFixed(2);
+                        subjectData.push(parseFloat(average));
+                        subjectExamNames.push(fileData.name || '未命名');
+                    }
+                }
+            });
+            
+            // 如果有足够的数据点，分析该科目的趋势
+            if (subjectData.length >= 2) {
+                const subjectTrend = analyzeAverageTrend(subject, subjectData, subjectExamNames);
+                analysis.trends.push(subjectTrend);
+            }
+        });
+        
+        // 综合所有科目的趋势，确定整体趋势
+        if (analysis.trends.length > 0) {
+            const improvingCount = analysis.trends.filter(t => t.trend === 'improving').length;
+            const decliningCount = analysis.trends.filter(t => t.trend === 'declining').length;
+            const fluctuatingCount = analysis.trends.filter(t => t.trend === 'fluctuating').length;
+            
+            const totalCount = analysis.trends.length;
+            
+            if (improvingCount > totalCount / 2) {
+                analysis.overview.trend = 'improving';
+            } else if (decliningCount > totalCount / 2) {
+                analysis.overview.trend = 'declining';
+            } else if (fluctuatingCount > totalCount / 3) {
+                analysis.overview.trend = 'fluctuating';
+            } else {
+                analysis.overview.trend = 'stable';
+            }
+            
+            // 计算平均变化率
+            let totalChange = 0;
+            analysis.trends.forEach(t => {
+                totalChange += t.totalChange;
+            });
+            
+            analysis.overview.averageChange = (totalChange / totalCount).toFixed(2);
+            analysis.overview.totalChange = totalChange.toFixed(2);
+            
+            // 确定波动性
+            const highVolatilityCount = analysis.trends.filter(t => t.volatility === 'high').length;
+            const mediumVolatilityCount = analysis.trends.filter(t => t.volatility === 'medium').length;
+            
+            if (highVolatilityCount > totalCount / 3) {
+                analysis.overview.volatility = 'high';
+            } else if (mediumVolatilityCount + highVolatilityCount > totalCount / 2) {
+                analysis.overview.volatility = 'medium';
+            } else {
+                analysis.overview.volatility = 'low';
+            }
+        }
+    } else {
+        // 单科目分析
+        filesData.forEach(fileData => {
+            // 获取科目列索引
+            const headers = fileData.data[0];
+            const subjectIndex = headers.findIndex(header => header === selectedSubject);
+            
+            // 如果找到该科目，计算平均分
+            if (subjectIndex !== -1) {
+                let sum = 0;
+                let count = 0;
+                
+                for (let i = 1; i < fileData.data.length; i++) {
+                    const row = fileData.data[i];
+                    if (row[subjectIndex] !== undefined && row[subjectIndex] !== null && !isNaN(row[subjectIndex])) {
+                        sum += parseFloat(row[subjectIndex]);
+                        count++;
+                    }
+                }
+                
+                // 计算平均分
+                if (count > 0) {
+                    const average = (sum / count).toFixed(2);
+                    validScores.push(parseFloat(average));
+                    examNames.push(fileData.name || '未命名');
+                }
+            }
+        });
+        
+        // 如果有足够的数据点，分析趋势
+        if (validScores.length >= 2) {
+            const subjectTrend = analyzeAverageTrend(selectedSubject, validScores, examNames);
+            analysis.trends.push(subjectTrend);
+            
+            // 单科目时，总览等于该科目的趋势
+            analysis.overview = {
+                subject: selectedSubject,
+                trend: subjectTrend.trend,
+                averageChange: subjectTrend.averageChange,
+                totalChange: subjectTrend.totalChange,
+                initialScore: subjectTrend.initialScore,
+                finalScore: subjectTrend.finalScore,
+                maxScore: subjectTrend.maxScore,
+                minScore: subjectTrend.minScore,
+                volatility: subjectTrend.volatility
+            };
+        }
+    }
+    
+    // 生成优化建议
+    analysis.suggestions = generateAverageTrendSuggestions(analysis, thresholds);
+    
+    console.log('班级平均分变化趋势分析结果:', analysis);
+    return analysis;
+}
+
+/**
+ * 分析平均分变化趋势
+ * @param {string} subject - 科目名称
+ * @param {Array} scores - 平均分数组
+ * @param {Array} examNames - 考试名称数组
+ * @returns {Object} 趋势分析结果
+ */
+function analyzeAverageTrend(subject, scores, examNames) {
+    const trend = {
+        subject: subject,
+        examNames: examNames,
+        scores: scores,
+        trend: 'stable', // 可能的值: improving, declining, stable, fluctuating
+        volatility: 'low', // 可能的值: low, medium, high
+        initialScore: scores[0],
+        finalScore: scores[scores.length - 1],
+        maxScore: Math.max(...scores),
+        minScore: Math.min(...scores),
+        totalChange: (scores[scores.length - 1] - scores[0]).toFixed(2),
+        averageChange: 0,
+        changePoints: []
+    };
+    
+    // 计算平均变化率
+    let totalChange = 0;
+    const changes = [];
+    
+    for (let i = 1; i < scores.length; i++) {
+        const change = scores[i] - scores[i-1];
+        changes.push(change);
+        totalChange += change;
+        
+        // 如果变化超过3分，记录为变化点
+        if (Math.abs(change) >= 3) {
+            trend.changePoints.push({
+                from: examNames[i-1],
+                to: examNames[i],
+                change: change.toFixed(2)
+            });
+        }
+    }
+    
+    trend.averageChange = (totalChange / (scores.length - 1)).toFixed(2);
+    
+    // 判断趋势类型
+    // 如果总变化超过5分，且变化方向一致，判断为上升或下降趋势
+    if (Math.abs(trend.totalChange) >= 5) {
+        if (trend.totalChange > 0) {
+            // 检查是否所有变化点都是正的
+            const allPositive = changes.every(change => change >= 0);
+            trend.trend = allPositive ? 'improving' : 'fluctuating';
+        } else {
+            // 检查是否所有变化点都是负的
+            const allNegative = changes.every(change => change <= 0);
+            trend.trend = allNegative ? 'declining' : 'fluctuating';
+        }
+    } else if (Math.abs(trend.totalChange) < 3) {
+        // 总变化小于3分，认为是稳定的
+        trend.trend = 'stable';
+    } else {
+        // 其他情况，看波动性
+        const changesSq = changes.map(c => c * c);
+        const variance = changesSq.reduce((sum, sq) => sum + sq, 0) / changes.length;
+        
+        if (variance > 25) { // 标准差大于5
+            trend.trend = 'fluctuating';
+            trend.volatility = 'high';
+        } else if (variance > 9) { // 标准差大于3
+            trend.volatility = 'medium';
+            trend.trend = Math.abs(trend.totalChange) >= 3 ? 
+                (trend.totalChange > 0 ? 'improving' : 'declining') : 'fluctuating';
+        } else {
+            trend.volatility = 'low';
+            trend.trend = 'stable';
+        }
+    }
+    
+    return trend;
+}
+
+/**
+ * 根据班级平均分变化趋势分析生成优化建议
+ * @param {Object} analysis - 趋势分析结果
+ * @param {Object} thresholds - 分数线设置
+ * @returns {Array} 优化建议数组
+ */
+function generateAverageTrendSuggestions(analysis, thresholds) {
+    const suggestions = [];
+    
+    // 根据总体趋势提供一般性建议
+    if (analysis.overview.trend === 'improving') {
+        suggestions.push({
+            title: '总体趋势积极',
+            type: 'general',
+            content: `班级整体呈上升趋势，平均每次考试提升 ${Math.abs(analysis.overview.averageChange)} 分，教学效果良好。建议继续保持现有教学方法，适当增加挑战性内容，激发学生潜力。`
+        });
+    } else if (analysis.overview.trend === 'declining') {
+        suggestions.push({
+            title: '注意成绩下滑趋势',
+            type: 'warning',
+            content: `班级整体呈下降趋势，平均每次考试下降 ${Math.abs(analysis.overview.averageChange)} 分。建议分析下滑原因，可能是难度增加或教学方法需要调整，考虑组织针对性补习和心理疏导。`
+        });
+    } else if (analysis.overview.trend === 'fluctuating') {
+        suggestions.push({
+            title: '成绩波动明显',
+            type: 'warning',
+            content: `班级成绩波动较大，说明教学或学习状态不稳定。建议检查教学内容连贯性，关注学生对不同知识点的掌握情况，调整教学节奏。`
+        });
+    } else {
+        suggestions.push({
+            title: '成绩保持稳定',
+            type: 'general',
+            content: `班级整体成绩保持稳定，变化不明显。建议保持现有教学方法的同时，尝试引入新的激励机制，帮助学生突破瓶颈，实现质的飞跃。`
+        });
+    }
+    
+    // 根据波动性提供建议
+    if (analysis.overview.volatility === 'high') {
+        suggestions.push({
+            title: '高波动性应对策略',
+            type: 'strategy',
+            content: `班级成绩波动较大，说明学习状态不稳定。建议：1) 加强基础知识巩固；2) 定期进行小测验，及时发现问题；3) 关注学生学习心态，避免大起大落。`
+        });
+    }
+    
+    // 为表现异常的科目提供具体建议
+    analysis.trends.forEach(subjectTrend => {
+        // 显著上升的科目
+        if (subjectTrend.trend === 'improving' && parseFloat(subjectTrend.totalChange) >= 8) {
+            suggestions.push({
+                title: `${subjectTrend.subject}科目显著进步`,
+                type: 'subject',
+                subject: subjectTrend.subject,
+                content: `${subjectTrend.subject}科目表现优异，总体提升${subjectTrend.totalChange}分，教学方法值得总结推广。可以组织优秀学生分享学习方法，带动其他学科进步。`
+            });
+        }
+        // 显著下降的科目
+        else if (subjectTrend.trend === 'declining' && parseFloat(subjectTrend.totalChange) <= -8) {
+            suggestions.push({
+                title: `${subjectTrend.subject}科目需要关注`,
+                type: 'subject',
+                subject: subjectTrend.subject,
+                content: `${subjectTrend.subject}科目下滑明显，总体下降${Math.abs(subjectTrend.totalChange)}分。建议分析试卷，找出易错点，针对性加强训练，必要时调整授课方式和内容难度。`
+            });
+        }
+        // 波动很大的科目
+        else if (subjectTrend.volatility === 'high') {
+            suggestions.push({
+                title: `${subjectTrend.subject}科目波动较大`,
+                type: 'subject',
+                subject: subjectTrend.subject,
+                content: `${subjectTrend.subject}科目成绩不稳定，波动较大。建议检查学生对不同知识模块的掌握情况，找出薄弱环节，设计系统性的复习计划，注重知识点的连贯性。`
+            });
+        }
+    });
+    
+    // 增加针对分数线的建议
+    // 如果班级平均分低于良好线
+    if (analysis.overview.finalScore < thresholds.goodScore) {
+        suggestions.push({
+            title: '提升整体水平',
+            type: 'strategy',
+            content: `班级平均分(${analysis.overview.finalScore})低于良好线(${thresholds.goodScore})，建议加强基础训练，多进行针对性练习，尤其关注学困生，提升整体水平。`
+        });
+    }
+    // 如果班级平均分接近优秀线
+    else if (analysis.overview.finalScore >= thresholds.goodScore && analysis.overview.finalScore < thresholds.excellentScore) {
+        suggestions.push({
+            title: '冲刺优秀水平',
+            type: 'strategy',
+            content: `班级平均分(${analysis.overview.finalScore})接近优秀线(${thresholds.excellentScore})，可以适当增加难度，帮助学生突破瓶颈，同时因材施教，关注不同层次学生的需求。`
+        });
+    }
+    
+    // 通用的教学建议
+    suggestions.push({
+        title: '教学方法优化',
+        type: 'general',
+        content: '根据趋势分析，建议：1) 定期回顾知识点，形成知识网络；2) 增加分层练习，满足不同学生需求；3) 建立激励机制，鼓励进步；4) 加强师生沟通，及时调整教学策略。'
+    });
+    
+    return suggestions;
+}
+
+/**
+ * 渲染班级平均分变化趋势分析总结和建议
+ * @param {Object} analysis - 趋势分析结果
+ * @param {Array} filesData - 文件数据数组
+ * @param {string} selectedSubject - 选择的科目
+ * @returns {string} HTML内容
+ */
+function renderClassAverageTrendSummary(analysis, filesData, selectedSubject) {
+    if (!analysis) {
+        return `
+            <div class="analysis-summary">
+                <div class="summary-title">
+                    <i class="fas fa-chart-line"></i> 班级平均分变化趋势分析总结
+                </div>
+                <div class="summary-text">
+                    数据不足，无法生成趋势分析。需要至少两次包含相同科目的考试记录。
+                </div>
+            </div>
+        `;
+    }
+    
+    // 获取班级名称
+    let className = '';
+    if (filesData.length > 0 && filesData[0].className) {
+        className = filesData[0].className;
+    } else {
+        className = '本班';
+    }
+    
+    // 趋势类型的中文描述
+    const trendText = {
+        'improving': '上升',
+        'declining': '下降',
+        'stable': '稳定',
+        'fluctuating': '波动'
+    };
+    
+    // 波动性的中文描述
+    const volatilityText = {
+        'low': '低',
+        'medium': '中',
+        'high': '高'
+    };
+    
+    // 生成总结文本
+    let summaryText = '';
+    
+    if (selectedSubject !== 'all') {
+        // 单科目总结
+        summaryText = `
+            <p>${className}在${selectedSubject}科目上的平均分整体呈<strong>${trendText[analysis.overview.trend]}</strong>趋势。
+            从初始平均分${analysis.overview.initialScore}分到最终平均分${analysis.overview.finalScore}分，
+            总体变化了${analysis.overview.totalChange}分，平均每次考试变化${analysis.overview.averageChange}分。
+            期间最高平均分达到${analysis.overview.maxScore}分，最低平均分为${analysis.overview.minScore}分，
+            成绩波动性${volatilityText[analysis.overview.volatility]}。</p>
+        `;
+    } else {
+        // 多科目总结
+        const improvingSubjects = analysis.trends.filter(t => t.trend === 'improving').map(t => t.subject);
+        const decliningSubjects = analysis.trends.filter(t => t.trend === 'declining').map(t => t.subject);
+        const stableSubjects = analysis.trends.filter(t => t.trend === 'stable').map(t => t.subject);
+        
+        summaryText = `
+            <p>${className}的整体平均分呈<strong>${trendText[analysis.overview.trend]}</strong>趋势，
+            平均每次考试变化${analysis.overview.averageChange}分，成绩波动性${volatilityText[analysis.overview.volatility]}。</p>
+        `;
+        
+        if (improvingSubjects.length > 0) {
+            summaryText += `<p>其中，${improvingSubjects.join('、')}等科目呈上升趋势；</p>`;
+        }
+        
+        if (decliningSubjects.length > 0) {
+            summaryText += `<p>${decliningSubjects.join('、')}等科目呈下降趋势；</p>`;
+        }
+        
+        if (stableSubjects.length > 0) {
+            summaryText += `<p>${stableSubjects.join('、')}等科目保持稳定。</p>`;
+        }
+    }
+    
+    // 生成具体科目的趋势描述
+    let subjectTrendsHTML = '';
+    
+    if (analysis.trends.length > 0) {
+        subjectTrendsHTML = `
+            <div class="subject-trend-suggestions">
+        `;
+        
+        analysis.trends.forEach(trend => {
+            const trendBadgeClass = `trend-${trend.trend === 'improving' ? 'improving' : 
+                                    trend.trend === 'declining' ? 'declining' : 
+                                    trend.trend === 'stable' ? 'stable' : 'fluctuating'}`;
+            
+            // 生成该科目的成绩点
+            let scorePointsHTML = '';
+            for (let i = 0; i < trend.scores.length; i++) {
+                scorePointsHTML += `
+                    <span class="trend-score-item">
+                        <i class="fas fa-clipboard-list"></i>${trend.examNames[i]}: ${trend.scores[i]}
+                    </span>
+                `;
+            }
+            
+            // 生成该科目的变化点
+            let changePointsHTML = '';
+            if (trend.changePoints.length > 0) {
+                trend.changePoints.forEach(point => {
+                    const isPositive = parseFloat(point.change) > 0;
+                    changePointsHTML += `
+                        <span class="trend-score-item">
+                            <i class="fas ${isPositive ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+                            ${point.from}→${point.to}: ${isPositive ? '+' : ''}${point.change}
+                        </span>
+                    `;
+                });
+            }
+            
+            subjectTrendsHTML += `
+                <div class="subject-trend-suggestion">
+                    <div class="subject-trend-header">
+                        <h5>${trend.subject}</h5>
+                        <span class="trend-badge ${trendBadgeClass}">
+                            ${trendText[trend.trend]}
+                        </span>
+                    </div>
+                    <div class="subject-trend-scores">
+                        ${scorePointsHTML}
+                    </div>
+                    <div class="subject-trend-scores">
+                        ${changePointsHTML}
+                    </div>
+                    <p class="subject-trend-suggestion-text">
+                        ${trend.subject}科目从${trend.initialScore}分变化到${trend.finalScore}分，
+                        总变化${trend.totalChange}分，平均每次变化${trend.averageChange}分。
+                        ${trend.trend === 'improving' ? '呈现良好的上升趋势。' : 
+                          trend.trend === 'declining' ? '呈现下降趋势，需要关注。' : 
+                          trend.trend === 'stable' ? '保持稳定，可以尝试突破。' : 
+                          '波动较大，需要稳定教学质量。'}
+                    </p>
+                </div>
+            `;
+        });
+        
+        subjectTrendsHTML += `
+            </div>
+        `;
+    }
+    
+    // 生成优化建议
+    let suggestionsHTML = '';
+    
+    if (analysis.suggestions.length > 0) {
+        suggestionsHTML = `
+            <div class="trend-strategies-section">
+                <h4><i class="fas fa-lightbulb"></i> 针对性优化建议</h4>
+                <div class="trend-strategies">
+        `;
+        
+        analysis.suggestions.forEach(suggestion => {
+            let iconClass = 'fa-chart-line'; // 默认图标
+            
+            if (suggestion.type === 'warning') {
+                iconClass = 'fa-exclamation-triangle';
+            } else if (suggestion.type === 'strategy') {
+                iconClass = 'fa-tasks';
+            } else if (suggestion.type === 'subject') {
+                iconClass = 'fa-book';
+            }
+            
+            suggestionsHTML += `
+                <div class="trend-strategy-item">
+                    <h5><i class="fas ${iconClass}"></i> ${suggestion.title}</h5>
+                    <p>${suggestion.content}</p>
+                </div>
+            `;
+        });
+        
+        suggestionsHTML += `
+                </div>
+            </div>
+        `;
+    }
+    
+    // 组合完整的总结HTML
+    return `
+        <div class="analysis-summary">
+            <div class="summary-title">
+                <i class="fas fa-chart-line"></i> 班级平均分变化趋势分析总结
+            </div>
+            <div class="summary-text">
+                ${summaryText}
+            </div>
+            
+            <div class="subject-trend-suggestions-section">
+                <h4><i class="fas fa-chart-bar"></i> 各科目趋势详情</h4>
+                ${subjectTrendsHTML}
+            </div>
+            
+            ${suggestionsHTML}
+        </div>
+    `;
+} 

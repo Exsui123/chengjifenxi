@@ -4406,7 +4406,13 @@ function generateClassAverageTrendAnalysis(filesData, selectedSubject) {
                         }
                     },
                     legend: {
-                        display: false
+                        position: 'top',
+                        labels: {
+                            boxWidth: 15,
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     datalabels: {
                         display: true,
@@ -4417,69 +4423,37 @@ function generateClassAverageTrendAnalysis(filesData, selectedSubject) {
                         },
                         font: {
                             weight: 'bold',
-                            size: 14
+                            size: 12
                         }
                     }
                 }
             }
         });
-        
-        // 添加数据表格
-        const tableContainer = document.createElement('div');
-        tableContainer.className = 'average-trend-table-container';
-        
-        // 创建表格
-        const table = document.createElement('table');
-        table.className = 'average-trend-table';
-        
-        // 创建表头
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        
-        // 添加表头列
-        const examHeader = document.createElement('th');
-        examHeader.textContent = '考试';
-        headerRow.appendChild(examHeader);
-        
-        const avgHeader = document.createElement('th');
-        avgHeader.textContent = '平均分';
-        headerRow.appendChild(avgHeader);
-        
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
-        
-        // 创建表格主体
-        const tbody = document.createElement('tbody');
-        
-        // 添加每个考试的数据行
-        for (let i = 0; i < labels.length; i++) {
-            const row = document.createElement('tr');
-            
-            // 考试名称列
-            const examCell = document.createElement('td');
-            examCell.textContent = labels[i];
-            row.appendChild(examCell);
-            
-            // 平均分列
-            const avgCell = document.createElement('td');
-            avgCell.textContent = data[i] || '无数据';
-            row.appendChild(avgCell);
-            
-            tbody.appendChild(row);
-        }
-        
-        table.appendChild(tbody);
-        tableContainer.appendChild(table);
-        
-        // 添加表格到结果容器
-        resultContainer.appendChild(tableContainer);
     }
     
-    // 将结果容器添加到分析结果区域
+    // 添加到分析结果区域
     analysisResult.appendChild(resultContainer);
     
-    // 移除加载状态
-    analysisResult.classList.remove('loading');
+    // 生成并添加总结和优化建议
+    try {
+        // 调用TrendAnalysis模块中的函数生成总结和建议
+        if (window.TrendAnalysis && typeof window.TrendAnalysis.generateClassAverageTrendSummaryAndSuggestions === 'function') {
+            const analysis = window.TrendAnalysis.generateClassAverageTrendSummaryAndSuggestions(filesData, selectedSubject);
+            
+            if (analysis) {
+                // 创建总结和建议容器
+                const summaryContainer = document.createElement('div');
+                summaryContainer.innerHTML = window.TrendAnalysis.renderClassAverageTrendSummary(analysis, filesData, selectedSubject);
+                
+                // 添加到结果区域
+                analysisResult.appendChild(summaryContainer);
+            }
+        } else {
+            console.warn('无法加载趋势分析模块，总结和建议功能不可用');
+        }
+    } catch (error) {
+        console.error('生成班级平均分变化趋势分析总结和建议时出错:', error);
+    }
 }
 
 /**
