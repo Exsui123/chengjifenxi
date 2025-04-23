@@ -888,4 +888,529 @@ function renderClassLevelSummary(summary) {
             </div>
         </div>
     `;
+}
+
+/**
+ * 生成跨班级平均分对比分析的智能总结和优化建议
+ * @param {Object} averageScores - 各班级各科目平均分数据，格式为: { 班级: { 科目: 平均分 } }
+ * @param {string} selectedSubject - 选中的科目，如果为'all'表示分析全部科目
+ * @returns {HTMLElement} 包含总结和建议的DOM元素
+ */
+function generateCrossClassAverageAnalysisSummary(averageScores, selectedSubject) {
+    // 创建总结容器
+    const summaryContainer = document.createElement('div');
+    summaryContainer.className = 'cross-class-analysis-summary';
+    
+    // 添加标题
+    const summaryTitle = document.createElement('h3');
+    summaryTitle.className = 'summary-title';
+    summaryTitle.innerHTML = `<i class="fas fa-chart-pie"></i> 跨班级平均分对比分析总结`;
+    summaryContainer.appendChild(summaryTitle);
+    
+    // 准备数据分析
+    const classNames = Object.keys(averageScores);
+    if (classNames.length === 0) {
+        const noDataMsg = document.createElement('p');
+        noDataMsg.className = 'summary-text';
+        noDataMsg.textContent = '没有足够的数据进行分析';
+        summaryContainer.appendChild(noDataMsg);
+        return summaryContainer;
+    }
+    
+    // 判断是分析单一科目还是全部科目
+    if (selectedSubject !== 'all') {
+        // 单科目分析
+        const summary = analyzeOneSubjectAcrossClasses(averageScores, selectedSubject);
+        summaryContainer.appendChild(renderCrossClassSingleSubjectSummary(summary));
+    } else {
+        // 全部科目分析
+        const summary = analyzeAllSubjectsAcrossClasses(averageScores);
+        summaryContainer.appendChild(renderCrossClassAllSubjectsSummary(summary));
+    }
+    
+    // 添加优化建议
+    const adviceTitle = document.createElement('h3');
+    adviceTitle.className = 'advice-title';
+    adviceTitle.innerHTML = `<i class="fas fa-lightbulb"></i> 教学优化建议`;
+    summaryContainer.appendChild(adviceTitle);
+    
+    // 生成建议列表
+    const adviceList = document.createElement('ul');
+    adviceList.className = 'advice-list';
+    
+    // 获取建议内容
+    const adviceItems = generateCrossClassAdvice(averageScores, selectedSubject);
+    
+    // 添加建议项
+    adviceItems.forEach(advice => {
+        const li = document.createElement('li');
+        li.innerHTML = advice;
+        adviceList.appendChild(li);
+    });
+    
+    summaryContainer.appendChild(adviceList);
+    
+    return summaryContainer;
+}
+
+/**
+ * 分析单一科目在不同班级间的表现
+ * @param {Object} averageScores - 各班级各科目平均分数据
+ * @param {string} subject - 科目名称
+ * @returns {Object} 分析结果摘要
+ */
+function analyzeOneSubjectAcrossClasses(averageScores, subject) {
+    const classNames = Object.keys(averageScores);
+    const scoresData = [];
+    
+    // 收集各班级该科目的平均分
+    classNames.forEach(className => {
+        if (averageScores[className][subject] !== undefined) {
+            scoresData.push({
+                className: className,
+                score: averageScores[className][subject]
+            });
+        }
+    });
+    
+    // 如果没有数据，返回空结果
+    if (scoresData.length === 0) {
+        return {
+            subject: subject,
+            hasData: false
+        };
+    }
+    
+    // 按分数排序（从高到低）
+    scoresData.sort((a, b) => b.score - a.score);
+    
+    // 计算总体平均分
+    const totalAverage = scoresData.reduce((sum, item) => sum + item.score, 0) / scoresData.length;
+    
+    // 计算最高和最低分
+    const highestScore = scoresData[0];
+    const lowestScore = scoresData[scoresData.length - 1];
+    
+    // 计算分数差值
+    const scoreDifference = highestScore.score - lowestScore.score;
+    
+    // 计算与平均值的差异
+    scoresData.forEach(item => {
+        item.diffFromAvg = item.score - totalAverage;
+        item.diffPercentage = (item.diffFromAvg / totalAverage * 100).toFixed(1);
+    });
+    
+    // 分为表现优秀和需要提升的班级
+    const excellentClasses = scoresData.filter(item => item.diffFromAvg > 0);
+    const improvingClasses = scoresData.filter(item => item.diffFromAvg < 0);
+    
+    // 分析表现差异大小
+    let performanceVariation = '中等';
+    if (scoreDifference > 15) {
+        performanceVariation = '较大';
+    } else if (scoreDifference < 5) {
+        performanceVariation = '较小';
+    }
+    
+    return {
+        subject: subject,
+        hasData: true,
+        classesData: scoresData,
+        totalAverage: totalAverage,
+        highestScore: highestScore,
+        lowestScore: lowestScore,
+        scoreDifference: scoreDifference,
+        excellentClasses: excellentClasses,
+        improvingClasses: improvingClasses,
+        performanceVariation: performanceVariation
+    };
+}
+
+/**
+ * 分析全部科目在不同班级间的表现
+ * @param {Object} averageScores - 各班级各科目平均分数据
+ * @returns {Object} 分析结果摘要
+ */
+function analyzeAllSubjectsAcrossClasses(averageScores) {
+    const classNames = Object.keys(averageScores);
+    
+    // 收集所有科目
+    const allSubjects = new Set();
+    classNames.forEach(className => {
+        Object.keys(averageScores[className]).forEach(subject => {
+            allSubjects.add(subject);
+        });
+    });
+    
+    const subjects = Array.from(allSubjects);
+    
+    // 各班级总体表现
+    const classPerformance = {};
+    
+    // 初始化各班级的总分和科目数量
+    classNames.forEach(className => {
+        classPerformance[className] = {
+            totalScore: 0,
+            subjectCount: 0,
+            averageScore: 0,
+            strongSubjects: [],
+            weakSubjects: []
+        };
+    });
+    
+    // 分析每个科目
+    const subjectsAnalysis = {};
+    subjects.forEach(subject => {
+        // 收集该科目各班级的平均分
+        const scoresForSubject = [];
+        let validClassCount = 0;
+        let totalScore = 0;
+        
+        classNames.forEach(className => {
+            if (averageScores[className][subject] !== undefined) {
+                scoresForSubject.push({
+                    className: className,
+                    score: averageScores[className][subject]
+                });
+                totalScore += averageScores[className][subject];
+                validClassCount++;
+                
+                // 更新班级总分和科目数
+                classPerformance[className].totalScore += averageScores[className][subject];
+                classPerformance[className].subjectCount++;
+            }
+        });
+        
+        if (validClassCount > 0) {
+            // 计算该科目的平均分
+            const subjectAverage = totalScore / validClassCount;
+            
+            // 保存科目分析
+            subjectsAnalysis[subject] = {
+                average: subjectAverage,
+                classScores: scoresForSubject
+            };
+            
+            // 更新各班级的强弱科目
+            scoresForSubject.forEach(item => {
+                const diff = item.score - subjectAverage;
+                
+                if (diff > 0) {
+                    classPerformance[item.className].strongSubjects.push({
+                        subject: subject,
+                        score: item.score,
+                        diff: diff,
+                        diffPercentage: (diff / subjectAverage * 100).toFixed(1)
+                    });
+                } else if (diff < 0) {
+                    classPerformance[item.className].weakSubjects.push({
+                        subject: subject,
+                        score: item.score,
+                        diff: diff,
+                        diffPercentage: (diff / subjectAverage * 100).toFixed(1)
+                    });
+                }
+            });
+        }
+    });
+    
+    // 计算各班级平均分
+    classNames.forEach(className => {
+        if (classPerformance[className].subjectCount > 0) {
+            classPerformance[className].averageScore = 
+                classPerformance[className].totalScore / classPerformance[className].subjectCount;
+            
+            // 排序强弱科目（按差异大小）
+            classPerformance[className].strongSubjects.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+            classPerformance[className].weakSubjects.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+        }
+    });
+    
+    // 班级平均分排名
+    const classAverages = [];
+    classNames.forEach(className => {
+        if (classPerformance[className].subjectCount > 0) {
+            classAverages.push({
+                className: className,
+                averageScore: classPerformance[className].averageScore
+            });
+        }
+    });
+    
+    // 按平均分排序
+    classAverages.sort((a, b) => b.averageScore - a.averageScore);
+    
+    // 计算班级间平均分差异
+    let maxAvgDiff = 0;
+    if (classAverages.length >= 2) {
+        maxAvgDiff = classAverages[0].averageScore - classAverages[classAverages.length - 1].averageScore;
+    }
+    
+    // 分析科目间的得分差异
+    const subjectAverages = [];
+    subjects.forEach(subject => {
+        if (subjectsAnalysis[subject]) {
+            subjectAverages.push({
+                subject: subject,
+                average: subjectsAnalysis[subject].average
+            });
+        }
+    });
+    
+    // 按平均分排序科目
+    subjectAverages.sort((a, b) => b.average - a.average);
+    
+    // 找出全局最好和最差科目
+    const bestSubject = subjectAverages.length > 0 ? subjectAverages[0] : null;
+    const worstSubject = subjectAverages.length > 0 ? subjectAverages[subjectAverages.length - 1] : null;
+    
+    return {
+        hasData: subjects.length > 0 && classNames.length > 0,
+        subjects: subjects,
+        classNames: classNames,
+        classPerformance: classPerformance,
+        subjectsAnalysis: subjectsAnalysis,
+        classAverages: classAverages,
+        subjectAverages: subjectAverages,
+        bestSubject: bestSubject,
+        worstSubject: worstSubject,
+        maxAvgDiff: maxAvgDiff
+    };
+}
+
+/**
+ * 渲染单科目跨班级分析总结
+ * @param {Object} summary - 分析结果摘要
+ * @returns {HTMLElement} 渲染后的DOM元素
+ */
+function renderCrossClassSingleSubjectSummary(summary) {
+    const container = document.createElement('div');
+    
+    if (!summary.hasData) {
+        const noDataMsg = document.createElement('p');
+        noDataMsg.className = 'summary-text';
+        noDataMsg.textContent = `没有足够的${summary.subject}科目数据进行分析`;
+        container.appendChild(noDataMsg);
+        return container;
+    }
+    
+    // 创建总结文本
+    const summaryText = document.createElement('p');
+    summaryText.className = 'summary-text';
+    
+    let content = `
+        <strong>${summary.subject}科目跨班级分析：</strong>
+        所有班级该科目的平均分为${summary.totalAverage.toFixed(1)}分。
+        其中${summary.highestScore.className}班成绩最好，平均分为${summary.highestScore.score.toFixed(1)}分；
+        ${summary.lowestScore.className}班有提升空间，平均分为${summary.lowestScore.score.toFixed(1)}分。
+        各班之间分数差异${summary.performanceVariation}，最高与最低分差${summary.scoreDifference.toFixed(1)}分。
+    `;
+    
+    // 添加表现优秀的班级
+    if (summary.excellentClasses.length > 0) {
+        content += '<br><br><strong>表现优秀的班级：</strong><br>';
+        summary.excellentClasses.forEach((cls, index) => {
+            content += `${cls.className}（高于平均${cls.diffFromAvg.toFixed(1)}分，超出${cls.diffPercentage}%）`;
+            if (index < summary.excellentClasses.length - 1) {
+                content += '，';
+            }
+        });
+    }
+    
+    // 添加需要提升的班级
+    if (summary.improvingClasses.length > 0) {
+        content += '<br><br><strong>需要提升的班级：</strong><br>';
+        summary.improvingClasses.forEach((cls, index) => {
+            content += `${cls.className}（低于平均${Math.abs(cls.diffFromAvg).toFixed(1)}分，差距${Math.abs(cls.diffPercentage)}%）`;
+            if (index < summary.improvingClasses.length - 1) {
+                content += '，';
+            }
+        });
+    }
+    
+    summaryText.innerHTML = content;
+    container.appendChild(summaryText);
+    
+    return container;
+}
+
+/**
+ * 渲染全科目跨班级分析总结
+ * @param {Object} summary - 分析结果摘要
+ * @returns {HTMLElement} 渲染后的DOM元素
+ */
+function renderCrossClassAllSubjectsSummary(summary) {
+    const container = document.createElement('div');
+    
+    if (!summary.hasData) {
+        const noDataMsg = document.createElement('p');
+        noDataMsg.className = 'summary-text';
+        noDataMsg.textContent = '没有足够的数据进行分析';
+        container.appendChild(noDataMsg);
+        return container;
+    }
+    
+    // 创建总结文本
+    const summaryText = document.createElement('p');
+    summaryText.className = 'summary-text';
+    
+    // 基本情况总结
+    let content = `<strong>跨班级全科目总体分析：</strong>
+        本次分析共包含${summary.subjects.length}个科目、${summary.classNames.length}个班级的数据。`;
+    
+    // 班级平均分排名
+    if (summary.classAverages.length > 0) {
+        content += `<br><br><strong>班级总体表现排名：</strong><br>`;
+        
+        summary.classAverages.forEach((cls, index) => {
+            content += `${index + 1}. ${cls.className}（平均分：${cls.averageScore.toFixed(1)}分）`;
+            if (index < summary.classAverages.length - 1) {
+                content += '<br>';
+            }
+        });
+        
+        // 添加班级间差异分析
+        if (summary.classAverages.length >= 2) {
+            const topClass = summary.classAverages[0];
+            const bottomClass = summary.classAverages[summary.classAverages.length - 1];
+            
+            content += `<br><br>班级间总体差异：${topClass.className}与${bottomClass.className}平均分相差${summary.maxAvgDiff.toFixed(1)}分`;
+            
+            if (summary.maxAvgDiff > 10) {
+                content += '，差异较大，需要关注教学均衡性';
+            } else if (summary.maxAvgDiff < 5) {
+                content += '，差异较小，各班教学水平均衡';
+            } else {
+                content += '，差异适中';
+            }
+        }
+    }
+    
+    // 科目整体表现分析
+    if (summary.subjectAverages.length > 0) {
+        content += `<br><br><strong>科目整体表现：</strong><br>`;
+        
+        if (summary.bestSubject && summary.worstSubject) {
+            content += `所有班级在${summary.bestSubject.subject}科目上表现最好（平均${summary.bestSubject.average.toFixed(1)}分），
+                       在${summary.worstSubject.subject}科目上有提升空间（平均${summary.worstSubject.average.toFixed(1)}分）。`;
+        }
+    }
+    
+    // 各班级的强弱科目分析
+    if (summary.classNames.length > 0) {
+        content += `<br><br><strong>各班级强弱科目分析：</strong><br>`;
+        
+        summary.classNames.forEach(className => {
+            const perf = summary.classPerformance[className];
+            
+            if (perf.subjectCount > 0) {
+                content += `${className}：`;
+                
+                // 强项科目
+                if (perf.strongSubjects.length > 0) {
+                    content += `强项是${perf.strongSubjects[0].subject}（高出平均${perf.strongSubjects[0].diff.toFixed(1)}分）`;
+                    
+                    if (perf.strongSubjects.length > 1) {
+                        content += `和${perf.strongSubjects[1].subject}（高出平均${perf.strongSubjects[1].diff.toFixed(1)}分）`;
+                    }
+                }
+                
+                // 弱项科目
+                if (perf.weakSubjects.length > 0) {
+                    content += `；需要提升的是${perf.weakSubjects[0].subject}（低于平均${Math.abs(perf.weakSubjects[0].diff).toFixed(1)}分）`;
+                    
+                    if (perf.weakSubjects.length > 1) {
+                        content += `和${perf.weakSubjects[1].subject}（低于平均${Math.abs(perf.weakSubjects[1].diff).toFixed(1)}分）`;
+                    }
+                }
+                
+                content += '<br>';
+            }
+        });
+    }
+    
+    summaryText.innerHTML = content;
+    container.appendChild(summaryText);
+    
+    return container;
+}
+
+/**
+ * 生成跨班级分析的优化建议
+ * @param {Object} averageScores - 各班级各科目平均分数据
+ * @param {string} selectedSubject - 选中的科目
+ * @returns {Array} 建议列表
+ */
+function generateCrossClassAdvice(averageScores, selectedSubject) {
+    const advice = [];
+    const classNames = Object.keys(averageScores);
+    
+    if (classNames.length === 0) {
+        return ['需要更多班级数据才能生成有效建议'];
+    }
+    
+    // 单科目分析
+    if (selectedSubject !== 'all') {
+        const summary = analyzeOneSubjectAcrossClasses(averageScores, selectedSubject);
+        
+        if (!summary.hasData) {
+            return [`没有足够的${selectedSubject}科目数据来生成建议`];
+        }
+        
+        // 差异化教学建议
+        if (summary.scoreDifference > 10) {
+            advice.push(`<strong>教学资源调配</strong>：${selectedSubject}科目在不同班级之间差异较大，建议在教学资源配置上向${summary.lowestScore.className}等班级倾斜，加强薄弱班级的教学支持。`);
+        }
+        
+        // 针对最高分班级的建议
+        advice.push(`<strong>保持优势</strong>：${summary.highestScore.className}在${selectedSubject}科目表现优秀，可以探索其教学方法和经验，在教研活动中分享成功教学策略。`);
+        
+        // 针对最低分班级的建议
+        advice.push(`<strong>针对性提升</strong>：${summary.lowestScore.className}在${selectedSubject}科目有提升空间，建议针对该班级进行${selectedSubject}知识点的专项诊断，找出学生普遍存在的薄弱环节。`);
+        
+        // 共性问题建议
+        advice.push(`<strong>共同提高</strong>：建议组织跨班级的${selectedSubject}学科教研活动，促进教师间的经验交流，统一教学进度与重难点把握。`);
+        
+        // 根据差异大小添加额外建议
+        if (summary.performanceVariation === '较大') {
+            advice.push(`<strong>均衡发展</strong>：各班级在${selectedSubject}科目上差异明显，可考虑开展"名师带教"活动，促进教师专业化成长，缩小班级间差距。`);
+        } else if (summary.performanceVariation === '较小') {
+            advice.push(`<strong>整体提升</strong>：各班级在${selectedSubject}科目上表现比较接近，可以设计统一的提升计划，共同提高整体教学质量。`);
+        }
+    } 
+    // 全科目分析
+    else {
+        const summary = analyzeAllSubjectsAcrossClasses(averageScores);
+        
+        if (!summary.hasData) {
+            return ['没有足够的数据来生成建议'];
+        }
+        
+        // 整体教学建议
+        advice.push(`<strong>教学均衡性</strong>：建议关注班级间的整体差异，优化教师配置和教学资源分配，促进教学均衡发展。特别是加强对排名靠后班级的教学支持。`);
+        
+        // 针对最佳科目的建议
+        if (summary.bestSubject) {
+            advice.push(`<strong>推广成功经验</strong>：所有班级在${summary.bestSubject.subject}科目上普遍表现较好，建议总结该科目的教学经验和方法，并推广到其他学科。`);
+        }
+        
+        // 针对最弱科目的建议
+        if (summary.worstSubject) {
+            advice.push(`<strong>加强薄弱学科</strong>：${summary.worstSubject.subject}是多数班级的薄弱科目，建议组织专题教研，邀请专家指导，系统提升该学科的教学水平。`);
+        }
+        
+        // 针对表现最好班级的建议
+        if (summary.classAverages.length > 0) {
+            const topClass = summary.classAverages[0];
+            advice.push(`<strong>分享优秀经验</strong>：${topClass.className}在多个科目上表现优秀，建议组织该班主任和任课教师分享班级管理和教学方法，促进教师间的学习交流。`);
+        }
+        
+        // 针对特色发展的建议
+        advice.push(`<strong>因材施教</strong>：不同班级有各自的学科优势和特点，建议在保证全面发展的基础上，鼓励各班发挥特长，形成教学特色。可考虑举办多样化的学科竞赛和活动，激发学生的兴趣和潜能。`);
+        
+        // 教学质量监控建议
+        advice.push(`<strong>常态化监测</strong>：建议建立定期的跨班级成绩分析机制，及时发现问题并调整教学策略，促进各班级和各学科的均衡发展。`);
+    }
+    
+    return advice;
 } 
