@@ -3,8 +3,21 @@
  * 为跨班级分数等级占比分析添加智能总结和优化建议功能
  */
 
+// 添加防重复执行标记
+if (typeof window.crossClassScoreLevelAnalysisEnhanced === 'undefined') {
+    window.crossClassScoreLevelAnalysisEnhanced = false;
+}
+
 // 在页面加载完成后执行
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查是否已经增强过，防止重复执行
+    if (window.crossClassScoreLevelAnalysisEnhanced) {
+        console.log('跨班级分数等级占比分析增强模块已经加载过，跳过');
+        return;
+    }
+    
+    console.log('开始加载跨班级分数等级占比分析增强模块');
+    
     // 扩展原有的generateCrossScoreLevelProportionAnalysis函数
     if (typeof window.originalGenerateCrossScoreLevelProportionAnalysis === 'undefined' && typeof generateCrossScoreLevelProportionAnalysis === 'function') {
         // 保存原始函数
@@ -12,13 +25,33 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 重新定义函数，添加智能总结和优化建议功能
         window.generateCrossScoreLevelProportionAnalysis = function(filesData, selectedSubject, thresholds) {
+            // 清除所有现有的智能总结容器，解决重复问题
+            const existingSummaries = document.querySelectorAll('.score-level-analysis-summary-container');
+            if (existingSummaries.length > 0) {
+                console.log(`发现${existingSummaries.length}个现有的智能总结容器，正在移除...`);
+                existingSummaries.forEach(element => element.remove());
+            }
+            
             // 首先调用原始函数生成图表
             window.originalGenerateCrossScoreLevelProportionAnalysis(filesData, selectedSubject, thresholds);
+            
+            // 使用唯一标识符标记此次分析
+            const analysisId = 'analysis-' + Date.now();
+            console.log(`开始添加智能总结，分析ID: ${analysisId}`);
             
             // 获取分析结果容器
             setTimeout(function() {
                 const resultDiv = document.getElementById('analysisResult');
-                if (!resultDiv) return;
+                if (!resultDiv) {
+                    console.log('找不到结果容器，无法添加智能总结');
+                    return;
+                }
+                
+                // 再次检查，确保在延迟期间没有添加其他总结
+                if (resultDiv.querySelector('.score-level-analysis-summary-container')) {
+                    console.log('检测到在延迟期间已添加了智能总结，跳过创建');
+                    return;
+                }
                 
                 // 计算各班级分数等级占比
                 const levelProportions = calculateClassLevelProportions(filesData, selectedSubject, thresholds);
@@ -26,6 +59,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 添加智能总结和优化建议
                 const summaryContainer = document.createElement('div');
                 summaryContainer.className = 'score-level-analysis-summary-container';
+                summaryContainer.setAttribute('data-created-timestamp', Date.now());
+                summaryContainer.setAttribute('data-analysis-id', analysisId);
                 
                 const heading = document.createElement('h3');
                 heading.className = 'summary-heading';
@@ -38,10 +73,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 将总结容器添加到结果区域
                 resultDiv.appendChild(summaryContainer);
-            }, 100); // 短暂延迟确保DOM已更新
+                console.log(`已添加智能总结，分析ID: ${analysisId}`);
+            }, 300); // 延长延迟时间，确保DOM已完全更新
         };
         
+        // 标记为已增强
+        window.crossClassScoreLevelAnalysisEnhanced = true;
         console.log('跨班级分数等级占比分析增强模块已加载');
+    } else {
+        console.log('无法找到原始函数或已经被增强过');
     }
 });
 
