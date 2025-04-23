@@ -2237,6 +2237,91 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
         }
         renderBarChart(studentData, displaySubjects, classAvgScores);
     }, 100);
+    
+    // 添加统计信息
+    const statsElement = document.createElement('div');
+    statsElement.className = 'level-proportion-stats';
+    
+    // 构建统计项HTML
+    let statsItemsHTML = '';
+    
+    // 无论人数是否为0，都显示所有类别的统计信息
+    statsItemsHTML += `
+        <div class="stats-item excellent">
+            <span class="stats-label">优秀</span>
+            <span class="stats-value">${excellentCount}人</span>
+            <span class="stats-percent">${excellentCount > 0 ? (excellentCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+        <div class="stats-item good">
+            <span class="stats-label">良好</span>
+            <span class="stats-value">${goodCount}人</span>
+            <span class="stats-percent">${goodCount > 0 ? (goodCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+        <div class="stats-item pass">
+            <span class="stats-label">及格</span>
+            <span class="stats-value">${passCount}人</span>
+            <span class="stats-percent">${passCount > 0 ? (passCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+        <div class="stats-item fail">
+            <span class="stats-label">不及格</span>
+            <span class="stats-value">${failCount}人</span>
+            <span class="stats-percent">${failCount > 0 ? (failCount / totalValidCount * 100).toFixed(1) : '0.0'}%</span>
+        </div>
+    `;
+    
+    statsElement.innerHTML = `
+        <div class="stats-row">
+            ${statsItemsHTML}
+        </div>
+        <div class="stats-summary">
+            <p>有效数据: ${totalValidCount}人 ${invalidCount > 0 ? `(无效数据: ${invalidCount}人)` : ''}</p>
+            <p>分数线: 优秀≥${thresholds.excellentScore}分, 良好≥${thresholds.goodScore}分, 及格≥${thresholds.passScore}分</p>
+        </div>
+    `;
+    analysisResult.appendChild(statsElement);
+    
+    // 添加总结和优化建议功能
+    addClassLevelSummaryAndSuggestions(analysisResult, fileData, selectedSubject, thresholds, {
+        excellentCount,
+        goodCount,
+        passCount,
+        failCount,
+        totalValidCount,
+        invalidCount
+    });
+}
+
+/**
+ * 为班级分数等级占比分析添加总结和优化建议
+ * @param {HTMLElement} container - 要添加总结和建议的容器元素
+ * @param {Object} fileData - 文件数据
+ * @param {string} subject - 科目名称
+ * @param {Object} thresholds - 分数线设置
+ * @param {Object} countData - 包含各等级人数的数据
+ */
+function addClassLevelSummaryAndSuggestions(container, fileData, subject, thresholds, countData) {
+    // 检查是否已加载总结和建议模块
+    if (window.ScoreSummary && typeof window.ScoreSummary.generateClassLevelSummary === 'function') {
+        try {
+            // 生成总结数据
+            const summary = window.ScoreSummary.generateClassLevelSummary(fileData, subject, thresholds, countData);
+            
+            // 渲染总结和建议
+            if (window.ScoreSummary.renderClassLevelSummary) {
+                const summaryHTML = window.ScoreSummary.renderClassLevelSummary(summary);
+                
+                // 创建总结和建议容器
+                const summaryContainer = document.createElement('div');
+                summaryContainer.className = 'level-proportion-summary-container';
+                summaryContainer.innerHTML = summaryHTML;
+                
+                // 添加到结果区域
+                container.appendChild(summaryContainer);
+            }
+        } catch (error) {
+            console.error('生成班级分数等级占比分析总结时出错:', error);
+        }
+    }
 }
 
 /**
@@ -3772,6 +3857,16 @@ function generateLevelProportionAnalysisResult(fileData, subject, thresholds) {
         </div>
     `;
     resultArea.appendChild(statsElement);
+    
+    // 添加总结和优化建议功能
+    addClassLevelSummaryAndSuggestions(resultArea, fileData, subject, thresholds, {
+        excellentCount,
+        goodCount,
+        passCount,
+        failCount,
+        totalValidCount,
+        invalidCount
+    });
 }
 
 /**

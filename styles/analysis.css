@@ -1123,3 +1123,189 @@
         gap: 0.5rem;
     }
 }
+
+/* 班级分数等级占比分析总结和优化建议样式 */
+.level-proportion-summary-container {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.class-level-summary {
+    width: 100%;
+}
+
+.class-level-summary .summary-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.class-level-summary .summary-header h4 {
+    font-size: 1.25rem;
+    color: #333;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.class-level-summary .summary-header h4 i {
+    margin-right: 0.5rem;
+    color: #2196F3;
+}
+
+.class-level-summary .overall-summary {
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.class-level-summary .overall-summary p {
+    margin: 0.5rem 0;
+    color: #333;
+}
+
+.class-level-summary .distribution-stats {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.class-level-summary .stats-card {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.class-level-summary .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border-radius: 8px;
+    width: calc(25% - 1rem);
+    min-width: 120px;
+    text-align: center;
+    color: #fff;
+}
+
+.class-level-summary .stat-item.excellent {
+    background-color: #4CAF50;
+}
+
+.class-level-summary .stat-item.good {
+    background-color: #2196F3;
+}
+
+.class-level-summary .stat-item.pass {
+    background-color: #FFC107;
+    color: #333;
+}
+
+.class-level-summary .stat-item.fail {
+    background-color: #F44336;
+}
+
+.class-level-summary .stat-label {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.class-level-summary .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.class-level-summary .composite-stats {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.class-level-summary .composite-stats p {
+    font-weight: bold;
+    color: #333;
+}
+
+.class-level-summary .optimization-suggestions-section {
+    margin-top: 2rem;
+}
+
+.class-level-summary .optimization-suggestions-section h4 {
+    font-size: 1.2rem;
+    color: #333;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.class-level-summary .optimization-suggestions-section h4 i {
+    margin-right: 0.5rem;
+    color: #FF9800;
+}
+
+.class-level-summary .optimization-suggestions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.class-level-summary .strategy-item {
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #FF9800;
+}
+
+.class-level-summary .strategy-item h5 {
+    font-size: 1rem;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.class-level-summary .strategy-item h5 i {
+    color: #FF9800;
+    margin-right: 0.5rem;
+}
+
+.class-level-summary .strategy-item p {
+    margin: 0;
+    color: #555;
+    line-height: 1.5;
+}
+
+/* 媒体查询适配移动设备 */
+@media (max-width: 768px) {
+    .class-level-summary .stats-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .class-level-summary .stat-item {
+        width: 100%;
+    }
+    
+    .class-level-summary .composite-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .class-level-summary .optimization-suggestions {
+        grid-template-columns: 1fr;
+    }
+}

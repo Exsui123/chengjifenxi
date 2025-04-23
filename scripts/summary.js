@@ -665,5 +665,227 @@ function renderScoreSummary(summary) {
 // 导出模块函数
 window.ScoreSummary = {
     generateScoreSummary,
-    renderScoreSummary
-}; 
+    renderScoreSummary,
+    generateClassLevelSummary,
+    renderClassLevelSummary
+};
+
+/**
+ * 生成班级分数等级占比分析总结和优化建议
+ * @param {Object} fileData - 文件数据
+ * @param {string} subject - 科目名称
+ * @param {Object} thresholds - 分数线设置
+ * @param {Object} countData - 包含各等级人数的数据
+ * @returns {Object} 包含总结和建议的对象
+ */
+function generateClassLevelSummary(fileData, subject, thresholds, countData) {
+    const { excellentCount, goodCount, passCount, failCount, totalValidCount } = countData;
+    
+    // 计算各等级比例
+    const excellentRate = (excellentCount / totalValidCount * 100).toFixed(1);
+    const goodRate = (goodCount / totalValidCount * 100).toFixed(1);
+    const passRate = (passCount / totalValidCount * 100).toFixed(1);
+    const failRate = (failCount / totalValidCount * 100).toFixed(1);
+    const excellentGoodRate = ((excellentCount + goodCount) / totalValidCount * 100).toFixed(1);
+    const passRateTotal = ((excellentCount + goodCount + passCount) / totalValidCount * 100).toFixed(1);
+    
+    // 班级整体表现评价
+    let overallPerformance = '';
+    if (excellentRate >= 30) {
+        overallPerformance = '优秀，班级整体水平较高';
+    } else if (excellentGoodRate >= 60) {
+        overallPerformance = '良好，班级整体水平较好';
+    } else if (passRateTotal >= 85) {
+        overallPerformance = '中等，班级整体基础较扎实';
+    } else if (passRateTotal >= 70) {
+        overallPerformance = '一般，班级整体水平尚需提高';
+    } else {
+        overallPerformance = '较弱，班级整体基础有待加强';
+    }
+    
+    // 班级分布分析
+    let distributionAnalysis = '';
+    if (excellentRate >= 25) {
+        distributionAnalysis += `优秀率达到${excellentRate}%，优秀生比例较高；`;
+    } else if (excellentRate <= 10) {
+        distributionAnalysis += `优秀率仅为${excellentRate}%，优秀生偏少；`;
+    } else {
+        distributionAnalysis += `优秀率为${excellentRate}%，优秀生比例适中；`;
+    }
+    
+    if (goodRate >= 30) {
+        distributionAnalysis += `良好率为${goodRate}%，良好生源充足；`;
+    } else if (goodRate <= 15) {
+        distributionAnalysis += `良好率仅为${goodRate}%，良好生偏少；`;
+    } else {
+        distributionAnalysis += `良好率为${goodRate}%，良好生适中；`;
+    }
+    
+    if (failRate >= 20) {
+        distributionAnalysis += `不及格率高达${failRate}%，需加强基础薄弱学生辅导。`;
+    } else if (failRate <= 5) {
+        distributionAnalysis += `不及格率仅${failRate}%，基础较扎实。`;
+    } else {
+        distributionAnalysis += `不及格率为${failRate}%，需关注部分学习困难学生。`;
+    }
+    
+    // 生成优化建议
+    const suggestions = [];
+    
+    // 根据分数分布情况生成针对性建议
+    if (excellentRate < 15) {
+        suggestions.push({
+            title: "提高优秀率",
+            content: "可通过拓展性课题和高水平习题训练，提高优秀生比例。为成绩良好的学生提供冲刺辅导，帮助他们跨入优秀行列。"
+        });
+    }
+    
+    if (goodRate < 20) {
+        suggestions.push({
+            title: "扩大良好学生比例",
+            content: "针对处于及格线以上的学生进行针对性辅导，帮助他们掌握重要知识点，提升解题能力，向良好水平迈进。"
+        });
+    }
+    
+    if (failRate > 15) {
+        suggestions.push({
+            title: "降低不及格率",
+            content: "建立学困生帮扶机制，一对一辅导不及格学生，重点突破基础知识难点，逐步提高其学习自信心和成绩水平。"
+        });
+    }
+    
+    // 针对分布不均匀的情况
+    if (Math.abs(excellentRate - failRate) > 30) {
+        suggestions.push({
+            title: "均衡班级发展",
+            content: "当前班级发展不均衡，建议实施分层教学策略，为不同水平的学生制定差异化教学计划，促进整体均衡发展。"
+        });
+    }
+    
+    // 针对整体情况的建议
+    if (passRateTotal < 80) {
+        suggestions.push({
+            title: "提高整体及格率",
+            content: "加强基础知识教学，多进行课堂互动和小测验，及时了解学生掌握情况，针对共性问题进行重点讲解。"
+        });
+    } else if (excellentGoodRate < 50) {
+        suggestions.push({
+            title: "提升整体学习质量",
+            content: "在保证基础的同时，适当增加课程难度，引导学生进行深度思考和分析，培养解决复杂问题的能力。"
+        });
+    } else if (excellentRate >= 25 && failRate <= 10) {
+        suggestions.push({
+            title: "保持良好教学效果",
+            content: "当前教学效果良好，建议持续现有教学方法，可适当增加拓展内容，进一步提高教学质量。"
+        });
+    }
+    
+    // 确保至少有三条建议
+    const generalSuggestions = [
+        {
+            title: "优化教学方法",
+            content: "根据不同学生的学习特点，采用多样化的教学方法，如小组合作学习、项目式学习等，提高学生参与度和学习效果。"
+        },
+        {
+            title: "加强能力培养",
+            content: "在知识教学的基础上，加强学生的思维能力、分析能力和解决问题能力的培养，提高学生的综合素质。"
+        },
+        {
+            title: "建立评价反馈机制",
+            content: "定期进行阶段性测试和评估，及时了解学生学习进展，给予针对性的反馈和指导，帮助学生改进学习方法。"
+        }
+    ];
+    
+    // 如果建议不足三条，添加通用建议
+    while (suggestions.length < 3) {
+        if (generalSuggestions.length > 0) {
+            suggestions.push(generalSuggestions.shift());
+        } else {
+            break;
+        }
+    }
+    
+    return {
+        className: fileData.class || '未知班级',
+        examName: fileData.name || '未知考试',
+        subject: subject,
+        thresholds: thresholds,
+        stats: {
+            excellentCount,
+            goodCount,
+            passCount,
+            failCount,
+            totalValidCount,
+            excellentRate,
+            goodRate,
+            passRate,
+            failRate,
+            excellentGoodRate,
+            passRateTotal
+        },
+        overallPerformance,
+        distributionAnalysis,
+        suggestions
+    };
+}
+
+/**
+ * 渲染班级分数等级占比分析总结和建议
+ * @param {Object} summary - 班级分数等级占比分析总结对象
+ * @returns {string} HTML内容
+ */
+function renderClassLevelSummary(summary) {
+    // 生成建议列表HTML
+    const suggestionsHtml = summary.suggestions.map(item => 
+        `<div class="strategy-item">
+            <h5><i class="fas fa-lightbulb"></i> ${item.title}</h5>
+            <p>${item.content}</p>
+        </div>`
+    ).join('');
+    
+    // 拼接完整HTML
+    return `
+        <div class="score-summary-section class-level-summary">
+            <div class="summary-header">
+                <h4><i class="fas fa-chart-pie"></i> ${summary.className} ${summary.subject}成绩等级分布分析</h4>
+            </div>
+            <div class="overall-summary">
+                <p>${summary.examName}中，${summary.className}在${summary.subject}科目的总体表现${summary.overallPerformance}。</p>
+                <p>${summary.distributionAnalysis}</p>
+                <p>分数线设置：优秀≥${summary.thresholds.excellentScore}分，良好≥${summary.thresholds.goodScore}分，及格≥${summary.thresholds.passScore}分。</p>
+            </div>
+            
+            <div class="distribution-stats">
+                <div class="stats-card">
+                    <div class="stat-item excellent">
+                        <span class="stat-label">优秀</span>
+                        <span class="stat-value">${summary.stats.excellentCount}人 (${summary.stats.excellentRate}%)</span>
+                    </div>
+                    <div class="stat-item good">
+                        <span class="stat-label">良好</span>
+                        <span class="stat-value">${summary.stats.goodCount}人 (${summary.stats.goodRate}%)</span>
+                    </div>
+                    <div class="stat-item pass">
+                        <span class="stat-label">及格</span>
+                        <span class="stat-value">${summary.stats.passCount}人 (${summary.stats.passRate}%)</span>
+                    </div>
+                    <div class="stat-item fail">
+                        <span class="stat-label">不及格</span>
+                        <span class="stat-value">${summary.stats.failCount}人 (${summary.stats.failRate}%)</span>
+                    </div>
+                </div>
+                <div class="composite-stats">
+                    <p>优良率：${summary.stats.excellentGoodRate}%</p>
+                    <p>及格率：${summary.stats.passRateTotal}%</p>
+                </div>
+            </div>
+            
+            <div class="optimization-suggestions-section">
+                <h4><i class="fas fa-brain"></i> 优化建议</h4>
+                <div class="optimization-suggestions">
+                    ${suggestionsHtml}
+                </div>
+            </div>
+        </div>
+    `;
+} 
