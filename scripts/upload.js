@@ -20,6 +20,9 @@ const expectedHeaders = ['学号', '姓名', '语文', '数学', '英语'];
 // 等待DOM完全加载后执行
 document.addEventListener('DOMContentLoaded', function() {
     initUploadModule();
+    
+    // 初始化小题得分分析模板下载
+    initQuestionScoreTemplateDownload();
 });
 
 /**
@@ -571,5 +574,36 @@ function generateUUID() {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
+    });
+}
+
+/**
+ * 初始化小题得分分析模板下载功能
+ */
+function initQuestionScoreTemplateDownload() {
+    const downloadLink = document.getElementById('downloadQuestionScoreTemplate');
+    if (!downloadLink) return;
+    
+    downloadLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // 如果有引入模板生成脚本，则使用它
+        if (typeof XLSX !== 'undefined') {
+            const scriptElement = document.createElement('script');
+            scriptElement.src = 'scripts/create-question-score-template.js';
+            document.body.appendChild(scriptElement);
+            
+            // 显示加载中提示
+            showMessage('正在生成小题得分分析模板...', 'info');
+            
+            // 脚本加载完成后移除
+            scriptElement.onload = function() {
+                setTimeout(function() {
+                    document.body.removeChild(scriptElement);
+                }, 1000);
+            };
+        } else {
+            showMessage('无法生成模板，请稍后再试', 'error');
+        }
     });
 } 

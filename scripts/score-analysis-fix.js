@@ -7,6 +7,9 @@
 window.addEventListener('load', function() {
     console.log('小题得分分析修复脚本已加载');
     fixQuestionScoreAnalysis();
+    
+    // 检查并修复localStorage存储问题
+    fixLocalStorageKeys();
 });
 
 /**
@@ -107,17 +110,103 @@ function loadScoreFiles() {
     
     // 从localStorage获取文件数据
     try {
-        const filesData = JSON.parse(localStorage.getItem('scoreFiles')) || [];
-        console.log(`找到${filesData.length}个成绩表`);
+        // 直接检查localStorage中的scoreFiles键是否存在
+        const rawData = localStorage.getItem('scoreFiles');
+        console.log('原始localStorage数据:', rawData);
+        
+        if (!rawData) {
+            console.error('localStorage中不存在scoreFiles键');
+            // 尝试使用存储模块的方法获取数据
+            if (typeof getAllFilesFromStorage === 'function') {
+                console.log('尝试使用getAllFilesFromStorage函数获取数据');
+                const storageFiles = getAllFilesFromStorage();
+                console.log('通过getAllFilesFromStorage获取的文件数据:', storageFiles);
+                
+                if (storageFiles && storageFiles.length > 0) {
+                    // 将这些文件添加到下拉框中
+                    storageFiles.forEach(file => {
+                        if (!file || !file.id) return;
+                        
+                        const option = document.createElement('option');
+                        option.value = file.id;
+                        option.textContent = `${file.name || '未命名'} - ${file.class || '未知班级'} (${file.date || '无日期'})`;
+                        fileSelect.appendChild(option);
+                        console.log('添加文件选项(从存储模块):', option.textContent);
+                    });
+                    
+                    // 启用文件选择下拉框
+                    fileSelect.disabled = false;
+                    return;
+                }
+            }
+            
+            // 尝试检查其他可能的localStorage键
+            console.log('尝试查找其他可能的localStorage键');
+            Object.keys(localStorage).forEach(key => {
+                console.log(`发现localStorage键: ${key}`);
+            });
+            
+            console.log('尝试检查gradeAnalysisData键');
+            const gradeData = localStorage.getItem('gradeAnalysisData');
+            if (gradeData) {
+                console.log('找到gradeAnalysisData数据:', gradeData.substring(0, 100) + '...');
+            }
+            
+            fileSelect.innerHTML += '<option value="" disabled>没有找到成绩表数据</option>';
+            return;
+        }
+        
+        let filesData;
+        try {
+            filesData = JSON.parse(rawData);
+            console.log('解析后的数据:', typeof filesData, Array.isArray(filesData) ? filesData.length : '非数组');
+            
+            if (!Array.isArray(filesData)) {
+                console.error('解析后的数据不是数组');
+                
+                // 检查是否为对象，且包含数组属性
+                if (typeof filesData === 'object' && filesData !== null) {
+                    Object.keys(filesData).forEach(key => {
+                        console.log(`对象属性: ${key}, 类型: ${typeof filesData[key]}`);
+                        if (Array.isArray(filesData[key])) {
+                            console.log(`属性 ${key} 是数组，长度: ${filesData[key].length}`);
+                            filesData = filesData[key];
+                        }
+                    });
+                }
+                
+                // 如果仍然不是数组，则尝试别的方法
+                if (!Array.isArray(filesData)) {
+                    fileSelect.innerHTML += '<option value="" disabled>数据格式错误，无法加载成绩表</option>';
+                    return;
+                }
+            }
+        } catch (parseError) {
+            console.error('解析JSON数据出错:', parseError);
+            fileSelect.innerHTML += '<option value="" disabled>数据解析错误，无法加载成绩表</option>';
+            return;
+        }
         
         if (filesData.length === 0) {
+            console.warn('成绩表数组为空');
             fileSelect.innerHTML += '<option value="" disabled>没有找到成绩表数据</option>';
             return;
         }
         
         // 添加文件选项
-        filesData.forEach(file => {
-            if (!file || !file.id) return;
+        filesData.forEach((file, index) => {
+            if (!file || !file.id) {
+                console.warn(`第${index}个文件数据无效:`, file);
+                return;
+            }
+            
+            console.log(`处理文件: ${file.id}`, {
+                name: file.name,
+                class: file.class,
+                date: file.date,
+                hasData: !!file.data,
+                dataLength: file.data ? file.data.length : 0
+            });
             
             const option = document.createElement('option');
             option.value = file.id;
@@ -282,4 +371,78 @@ function fixStudentSelect() {
         });
         generateBtn._hasClickEvent = true;
     }
+}
+
+/**
+ * 检查并修复localStorage中的键问题
+ * 确保成绩数据使用正确的存储键
+ */
+function fixLocalStorageKeys() {
+    console.log('检查并修复localStorage存储键...');
+    
+    // 检查是否存在'scoreFiles'键
+    const scoreFilesData = localStorage.getItem('scoreFiles');
+    
+    // 检查是否存在'gradeAnalysisData'键（storage.js使用的键名）
+    const gradeAnalysisData = localStorage.getItem('gradeAnalysisData');
+    
+    if (!scoreFilesData && gradeAnalysisData) {
+        console.log('发现gradeAnalysisData键，但scoreFiles键不存在，复制数据...');
+        try {
+            localStorage.setItem('scoreFiles', gradeAnalysisData);
+            console.log('成功将数据从gradeAnalysisData复制到scoreFiles');
+        } catch (error) {
+            console.error('复制数据时出错:', error);
+        }
+    } else if (scoreFilesData && !gradeAnalysisData) {
+        console.log('发现scoreFiles键，但gradeAnalysisData键不存在，复制数据...');
+        try {
+            localStorage.setItem('gradeAnalysisData', scoreFilesData);
+            console.log('成功将数据从scoreFiles复制到gradeAnalysisData');
+        } catch (error) {
+            console.error('复制数据时出错:', error);
+        }
+    } else if (scoreFilesData && gradeAnalysisData) {
+        // 如果两个键都存在，进行比较并同步最新的数据
+        try {
+            const scoreFiles = JSON.parse(scoreFilesData);
+            const gradeData = JSON.parse(gradeAnalysisData);
+            
+            console.log(`scoreFiles数据包含${Array.isArray(scoreFiles) ? scoreFiles.length : '未知'}个文件`);
+            console.log(`gradeAnalysisData数据包含${Array.isArray(gradeData) ? gradeData.length : '未知'}个文件`);
+            
+            // 使用最新的数据（文件数量最多的）
+            if (Array.isArray(scoreFiles) && Array.isArray(gradeData)) {
+                if (scoreFiles.length > gradeData.length) {
+                    localStorage.setItem('gradeAnalysisData', scoreFilesData);
+                    console.log('scoreFiles数据更新，已同步到gradeAnalysisData');
+                } else if (gradeData.length > scoreFiles.length) {
+                    localStorage.setItem('scoreFiles', gradeAnalysisData);
+                    console.log('gradeAnalysisData数据更新，已同步到scoreFiles');
+                } else {
+                    // 如果文件数量相同，比较最后修改时间
+                    console.log('两个存储键的文件数量相同，检查是否内容一致');
+                    
+                    // 简单检查是否内容一致
+                    if (scoreFilesData !== gradeAnalysisData) {
+                        // 如果内容不一致，使用scoreFiles的数据
+                        localStorage.setItem('gradeAnalysisData', scoreFilesData);
+                        console.log('内容不一致，已同步scoreFiles数据到gradeAnalysisData');
+                    } else {
+                        console.log('两个存储键的内容一致，无需同步');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('比较数据时出错:', error);
+        }
+    } else {
+        console.warn('没有找到任何成绩表数据存储键');
+    }
+    
+    // 检查其他可能的键
+    console.log('检查所有localStorage键:');
+    Object.keys(localStorage).forEach(key => {
+        console.log(`- ${key}: ${localStorage.getItem(key) ? localStorage.getItem(key).length + '字符' : '空'}`);
+    });
 } 
