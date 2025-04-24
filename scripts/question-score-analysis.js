@@ -470,7 +470,7 @@ function renderQuestionScoreChart(questionScores) {
             }]
         },
         options: {
-            indexAxis: 'y', // 水平条形图
+            // 竖向柱状图，默认indexAxis为'x'，无需设置
             responsive: true,
             maintainAspectRatio: false,
             scales: {
