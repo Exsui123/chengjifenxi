@@ -8,6 +8,10 @@ let selectedQuestionScoreFileId = '';
 // 当前选择的学生ID
 let selectedQuestionScoreStudentId = '';
 
+// 全局变量：按钮状态
+let showMaxScoreBar = false; // 是否显示满分柱子，默认不显示
+let sortByScoreRate = false; // 是否按得分率排序
+
 // 等待DOM完全加载后执行
 document.addEventListener('DOMContentLoaded', function() {
     initQuestionScoreAnalysisModule();
@@ -332,11 +336,24 @@ function generateQuestionScoreAnalysisResult(studentRow, headers, questionColumn
     // 获取学生姓名
     const studentName = studentRow[nameColumnIndex];
     
+    // 按钮区域HTML
+    const buttonHTML = `
+        <div id="questionScoreChartBtns" style="margin-bottom: 1rem; display: flex; gap: 1rem;">
+            <label style="cursor:pointer;">
+                <input type="checkbox" id="toggleMaxScoreBar" ${showMaxScoreBar ? 'checked' : ''} /> 显示满分
+            </label>
+            <label style="cursor:pointer;">
+                <input type="checkbox" id="toggleSortByScoreRate" ${sortByScoreRate ? 'checked' : ''} /> 按得分率排序
+            </label>
+        </div>
+    `;
+    
     // 创建分析结果内容
     const resultHTML = `
         <div class="analysis-result-container">
             <h3 class="analysis-title">个人小题得分情况分析 - ${studentName}</h3>
             <div class="analysis-content">
+                ${buttonHTML}
                 <div class="question-score-chart-container">
                     <canvas id="questionScoreChart"></canvas>
                 </div>
@@ -351,199 +368,287 @@ function generateQuestionScoreAnalysisResult(studentRow, headers, questionColumn
     // 更新分析结果容器
     resultContainer.innerHTML = resultHTML;
     
-    // 收集小题分数数据
-    const questionScores = questionColumns.map(column => {
-        const score = parseFloat(studentRow[column.index]) || 0;
-        
-        // 尝试从其他行获取各小题的满分值
-        const maxScore = getQuestionMaxScore(column.index);
-        
-        return {
-            question: column.name,
-            score: score,
-            maxScore: maxScore
-        };
-    });
-    
-    // 渲染小题得分图表
-    renderQuestionScoreChart(questionScores);
-    
-    // 生成得分概述
-    generateQuestionScoreSummary(questionScores);
-    
     /**
      * 获取小题的满分值（如果有的话）
      * @param {number} columnIndex - 列索引
-     * @returns {number} 满分值，如果不确定则返回0
+     * @returns {number} 满分值，如果不确定则返回10
      */
     function getQuestionMaxScore(columnIndex) {
-        // 获取小题的名称
-        const questionName = headers[columnIndex];
-        
-        // 解析小题名称中的分数信息（如果存在）
-        if (typeof questionName === 'string') {
-            // 从格式为"小题X(20分)"或"小题X（20分）"的名称中提取分数
-            const scoreMatch = questionName.match(/\((\d+)分\)|\（(\d+)分\）/);
-            if (scoreMatch) {
-                // 提取第一个捕获组或第二个捕获组中的数字（取决于使用的是英文还是中文括号）
-                return parseInt(scoreMatch[1] || scoreMatch[2]);
+        try {
+            // 获取小题的名称
+            const questionName = headers[columnIndex];
+            
+            // 解析小题名称中的分数信息（如果存在）
+            if (typeof questionName === 'string') {
+                // 从格式为"小题X(20分)"或"小题X（20分）"的名称中提取分数
+                const scoreMatch = questionName.match(/\((\d+)分\)|\（(\d+)分\）/);
+                if (scoreMatch) {
+                    // 提取第一个捕获组或第二个捕获组中的数字（取决于使用的是英文还是中文括号）
+                    return parseInt(scoreMatch[1] || scoreMatch[2]);
+                }
             }
-        }
-        
-        // 如果小题名称中包含分值信息（如"小题7(20分)"），从中提取
-        // 正则表达式匹配括号内的数字并提取
-        const questionStr = String(questionName || '');
-        const maxScoreMatch = questionStr.match(/\((\d+)\s*分\)|\（(\d+)\s*分\）/);
-        if (maxScoreMatch) {
-            return parseInt(maxScoreMatch[1] || maxScoreMatch[2]);
-        }
-        
-        // 如果小题名称不含分值信息但包含数字（例如：小题7(20分)），尝试提取
-        const scoreInNameMatch = /小题\s*(\d+)\s*(?:\(|（)(\d+)(?:分)(?:\)|）)/i.exec(questionStr);
-        if (scoreInNameMatch && scoreInNameMatch[2]) {
-            return parseInt(scoreInNameMatch[2]);
-        }
-        
-        // 根据列名中的提示获取满分值
-        if (questionStr.includes('小题7') || questionStr.includes('题7') || questionStr.includes('第7题')) {
-            return 20; // 小题7的满分是20分
-        } else if (questionStr.includes('小题6') || questionStr.includes('题6') || questionStr.includes('第6题')) {
-            return 20; // 小题6的满分是20分
-        } else if (questionStr.includes('小题5') || questionStr.includes('题5') || questionStr.includes('第5题')) {
-            return 15; // 小题5的满分是15分
-        } else if (questionStr.includes('小题4') || questionStr.includes('题4') || questionStr.includes('第4题')) {
-            return 15; // 小题4的满分是15分
-        } else {
-            // 默认其他小题满分为10分
-            return 10;
+            
+            // 如果小题名称中包含分值信息（如"小题7(20分)"），从中提取
+            // 正则表达式匹配括号内的数字并提取
+            const questionStr = String(questionName || '');
+            const maxScoreMatch = questionStr.match(/\((\d+)\s*分\)|\（(\d+)\s*分\）/);
+            if (maxScoreMatch) {
+                return parseInt(maxScoreMatch[1] || maxScoreMatch[2]);
+            }
+            
+            // 如果小题名称不含分值信息但包含数字（例如：小题7(20分)），尝试提取
+            const scoreInNameMatch = /小题\s*(\d+)\s*(?:\(|（)(\d+)(?:分)(?:\)|）)/i.exec(questionStr);
+            if (scoreInNameMatch && scoreInNameMatch[2]) {
+                return parseInt(scoreInNameMatch[2]);
+            }
+            
+            // 根据列名中的提示获取满分值
+            if (questionStr.includes('小题7') || questionStr.includes('题7') || questionStr.includes('第7题')) {
+                return 20; // 小题7的满分是20分
+            } else if (questionStr.includes('小题6') || questionStr.includes('题6') || questionStr.includes('第6题')) {
+                return 20; // 小题6的满分是20分
+            } else if (questionStr.includes('小题5') || questionStr.includes('题5') || questionStr.includes('第5题')) {
+                return 15; // 小题5的满分是15分
+            } else if (questionStr.includes('小题4') || questionStr.includes('题4') || questionStr.includes('第4题')) {
+                return 15; // 小题4的满分是15分
+            } else {
+                // 默认其他小题满分为10分
+                return 10;
+            }
+        } catch (error) {
+            console.error('获取满分值出错:', error);
+            return 10; // 出错时返回默认值10
         }
     }
+    
+    // 收集小题分数数据
+    let questionScores = [];
+    try {
+        questionScores = questionColumns.map(column => {
+            const score = parseFloat(studentRow[column.index]) || 0;
+            // 尝试从其他行获取各小题的满分值
+            const maxScore = getQuestionMaxScore(column.index);
+            console.log(`小题 ${column.name}: 得分=${score}, 满分=${maxScore}`);
+            return {
+                question: column.name,
+                score: score,
+                maxScore: maxScore
+            };
+        });
+    } catch (error) {
+        console.error('收集小题分数数据出错:', error);
+        showMessage('收集小题分数数据出错:' + error.message, 'error');
+    }
+    
+    // 保存原始顺序
+    const originalOrder = [...questionScores];
+    
+    // 排序处理
+    if (sortByScoreRate) {
+        questionScores = [...questionScores].sort((a, b) => (b.score / b.maxScore) - (a.score / a.maxScore));
+    }
+    
+    try {
+        // 渲染小题得分图表
+        renderQuestionScoreChart(questionScores, showMaxScoreBar);
+        
+        // 生成得分概述
+        generateQuestionScoreSummary(questionScores);
+    } catch (error) {
+        console.error('渲染图表或生成概述时出错:', error);
+        showMessage('图表渲染失败:' + error.message, 'error');
+    }
+    
+    // 绑定按钮事件
+    setTimeout(() => {
+        try {
+            const maxScoreBtn = document.getElementById('toggleMaxScoreBar');
+            const sortBtn = document.getElementById('toggleSortByScoreRate');
+            
+            if (maxScoreBtn) {
+                maxScoreBtn.onchange = function() {
+                    showMaxScoreBar = this.checked;
+                    // 重新渲染整个分析区域，保证按钮、图表、概述都同步
+                    generateQuestionScoreAnalysisResult(studentRow, headers, questionColumns, nameColumnIndex);
+                };
+            }
+            
+            if (sortBtn) {
+                sortBtn.onchange = function() {
+                    sortByScoreRate = this.checked;
+                    // 重新渲染整个分析区域，保证按钮、图表、概述都同步
+                    generateQuestionScoreAnalysisResult(studentRow, headers, questionColumns, nameColumnIndex);
+                };
+            }
+        } catch (error) {
+            console.error('绑定按钮事件出错:', error);
+        }
+    }, 100);
 }
 
 /**
  * 渲染小题得分图表
  * @param {Array} questionScores - 小题分数数据
+ * @param {boolean} showMaxScoreBar - 是否显示满分柱子
  */
-function renderQuestionScoreChart(questionScores) {
+function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
     const canvas = document.getElementById('questionScoreChart');
-    if (!canvas) return;
+    if (!canvas) {
+        console.error('找不到图表Canvas元素');
+        return;
+    }
     
-    // 准备图表数据
-    const labels = questionScores.map(item => {
-        // 如果小题名称中已经包含分值信息，直接使用
-        if (String(item.question).includes('分)') || String(item.question).includes('分）')) {
-            return item.question;
+    console.log('开始渲染图表，数据:', questionScores);
+    
+    try {
+        // 准备图表数据
+        const labels = questionScores.map(item => {
+            // 如果小题名称中已经包含分值信息，直接使用
+            if (String(item.question).includes('分)') || String(item.question).includes('分）')) {
+                return item.question;
+            }
+            // 否则，添加满分信息到标签
+            return `${item.question}(${item.maxScore}分)`;
+        });
+        const scores = questionScores.map(item => item.score);
+        const maxScores = questionScores.map(item => item.maxScore);
+        
+        // 计算得分率
+        const scoreRates = questionScores.map(item => 
+            item.maxScore > 0 ? (item.score / item.maxScore * 100).toFixed(1) + '%' : 'N/A'
+        );
+        
+        // 计算Y轴自适应刻度间隔
+        const maxScore = Math.max(...maxScores);
+        const minScore = Math.min(...maxScores);
+        // 期望的最大刻度数量（比如12~15个）
+        const maxTicks = 12;
+        let stepSize = 1;
+        if (maxScore - minScore > 0) {
+            stepSize = Math.ceil((maxScore - minScore) / maxTicks);
+            if (stepSize < 1) stepSize = 1;
         }
-        // 否则，添加满分信息到标签
-        return `${item.question}(${item.maxScore}分)`;
-    });
-    const scores = questionScores.map(item => item.score);
-    const maxScores = questionScores.map(item => item.maxScore);
-    
-    // 计算得分率
-    const scoreRates = questionScores.map(item => 
-        item.maxScore > 0 ? (item.score / item.maxScore * 100).toFixed(1) + '%' : 'N/A'
-    );
-    
-    // 创建水平条形图
-    const chart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '得分',
-                data: scores,
-                backgroundColor: questionScores.map(item => {
-                    const rate = item.maxScore > 0 ? item.score / item.maxScore : 0;
-                    if (rate >= 0.8) return 'rgba(75, 192, 192, 0.7)'; // 得分率高
-                    if (rate >= 0.6) return 'rgba(54, 162, 235, 0.7)'; // 得分率中等
-                    return 'rgba(255, 99, 132, 0.7)'; // 得分率低
-                }),
-                borderColor: 'rgba(0, 0, 0, 0.1)',
-                borderWidth: 1
-            }, {
+        
+        // 组装datasets
+        const datasets = [{
+            label: '得分',
+            data: scores,
+            backgroundColor: questionScores.map(item => {
+                const rate = item.maxScore > 0 ? item.score / item.maxScore : 0;
+                if (rate >= 0.8) return 'rgba(75, 192, 192, 0.7)'; // 得分率高
+                if (rate >= 0.6) return 'rgba(54, 162, 235, 0.7)'; // 得分率中等
+                return 'rgba(255, 99, 132, 0.7)'; // 得分率低
+            }),
+            borderColor: 'rgba(0, 0, 0, 0.1)',
+            borderWidth: 1
+        }];
+        if (showMaxScoreBar) {
+            datasets.push({
                 label: '满分',
                 data: maxScores,
                 backgroundColor: 'rgba(0, 0, 0, 0.05)',
                 borderColor: 'rgba(0, 0, 0, 0.1)',
                 borderWidth: 1
-            }]
-        },
-        options: {
-            // 竖向柱状图，默认indexAxis为'x'，无需设置
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    // 调整X轴最大值以适应所有小题的满分
-                    suggestedMax: Math.max(...maxScores) * 1.1, // 添加一些边距
-                    title: {
-                        display: true,
-                        text: '分数',
-                        font: {
-                            size: 14
-                        }
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: '题目',
-                        font: {
-                            size: 14
-                        }
-                    }
-                }
+            });
+        }
+        
+        // 创建水平条形图
+        const chart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
             },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        afterLabel: function(context) {
-                            const index = context.dataIndex;
-                            if (context.datasetIndex === 0) { // 只在显示得分的数据集中显示得分率
-                                return `得分率: ${scoreRates[index]}`;
+            options: {
+                // 竖向柱状图，默认indexAxis为'x'，无需设置
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        // 调整X轴最大值以适应所有小题的满分
+                        suggestedMax: Math.max(...maxScores) * 1.1, // 添加一些边距
+                        title: {
+                            display: true,
+                            text: '分数',
+                            font: {
+                                size: 14
                             }
-                            return '';
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '题目',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        // 自适应分数间隔
+                        ticks: {
+                            stepSize: stepSize
                         }
                     }
                 },
-                datalabels: {
-                    display: function(context) {
-                        return context.datasetIndex === 0; // 只在得分的数据集上显示标签
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const index = context.dataIndex;
+                                if (context.datasetIndex === 0) { // 只在显示得分的数据集中显示得分率
+                                    return `得分率: ${scoreRates[index]}`;
+                                }
+                                return '';
+                            }
+                        }
                     },
-                    formatter: function(value, context) {
-                        const index = context.dataIndex;
-                        return value + ' (' + scoreRates[index] + ')';
+                    datalabels: {
+                        display: function(context) {
+                            return context.datasetIndex === 0; // 只在得分的数据集上显示标签
+                        },
+                        formatter: function(value, context) {
+                            const index = context.dataIndex;
+                            return value + ' (' + scoreRates[index] + ')';
+                        },
+                        color: 'black',
+                        anchor: 'end',
+                        align: 'end',
+                        offset: 4,
+                        font: {
+                            weight: 'bold'
+                        }
                     },
-                    color: 'black',
-                    anchor: 'end',
-                    align: 'end',
-                    offset: 4,
-                    font: {
-                        weight: 'bold'
-                    }
-                },
-                legend: {
-                    position: 'top'
-                },
-                title: {
-                    display: true,
-                    text: '个人小题得分情况',
-                    font: {
-                        size: 18
+                    legend: {
+                        position: 'top'
+                    },
+                    title: {
+                        display: true,
+                        text: '个人小题得分情况',
+                        font: {
+                            size: 18
+                        }
                     }
                 }
             }
+        });
+        
+        // 调整图表容器高度
+        const container = document.querySelector('.question-score-chart-container');
+        if (container) {
+            // 设置最大高度，超出部分可滚动
+            container.style.maxHeight = '600px';
+            container.style.overflowY = 'auto';
+            // 根据题目数量调整高度，每题至少40px高度
+            const minHeight = Math.max(400, questionScores.length * 40);
+            container.style.height = minHeight + 'px';
         }
-    });
-    
-    // 调整图表容器高度
-    const container = document.querySelector('.question-score-chart-container');
-    if (container) {
-        // 根据题目数量调整高度，每题至少40px高度
-        const minHeight = Math.max(400, questionScores.length * 40);
-        container.style.height = minHeight + 'px';
+    } catch (error) {
+        console.error('图表渲染错误:', error);
+        // 在canvas上显示错误信息，这样用户可以看到
+        const ctx = canvas.getContext('2d');
+        ctx.font = '14px Arial';
+        ctx.fillStyle = 'red';
+        ctx.fillText('图表渲染失败: ' + error.message, 10, 50);
     }
 }
 
