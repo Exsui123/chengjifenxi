@@ -587,7 +587,7 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true, useSco
                         suggestedMax: useScoreRate ? 105 : Math.max(...maxValues) * 1.1, // 添加一些边距
                         title: {
                             display: true,
-                            text: useScoreRate ? '得分率(%)' : '分数',
+                            text: '题目',
                             font: {
                                 size: 14
                             }
@@ -596,7 +596,7 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true, useSco
                     y: {
                         title: {
                             display: true,
-                            text: '题目',
+                            text: useScoreRate ? '得分率(%)' : '分数',
                             font: {
                                 size: 14
                             }
