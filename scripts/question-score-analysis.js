@@ -377,9 +377,46 @@ function generateQuestionScoreAnalysisResult(studentRow, headers, questionColumn
      * @returns {number} 满分值，如果不确定则返回0
      */
     function getQuestionMaxScore(columnIndex) {
-        // 这里可以实现获取满分的逻辑，例如从文件备注中查找
-        // 目前简单返回一个假设的满分值
-        return 10; // 假设每小题满分10分
+        // 获取小题的名称
+        const questionName = headers[columnIndex];
+        
+        // 解析小题名称中的分数信息（如果存在）
+        if (typeof questionName === 'string') {
+            // 从格式为"小题X(20分)"或"小题X（20分）"的名称中提取分数
+            const scoreMatch = questionName.match(/\((\d+)分\)|\（(\d+)分\）/);
+            if (scoreMatch) {
+                // 提取第一个捕获组或第二个捕获组中的数字（取决于使用的是英文还是中文括号）
+                return parseInt(scoreMatch[1] || scoreMatch[2]);
+            }
+        }
+        
+        // 如果小题名称中包含分值信息（如"小题7(20分)"），从中提取
+        // 正则表达式匹配括号内的数字并提取
+        const questionStr = String(questionName || '');
+        const maxScoreMatch = questionStr.match(/\((\d+)\s*分\)|\（(\d+)\s*分\）/);
+        if (maxScoreMatch) {
+            return parseInt(maxScoreMatch[1] || maxScoreMatch[2]);
+        }
+        
+        // 如果小题名称不含分值信息但包含数字（例如：小题7(20分)），尝试提取
+        const scoreInNameMatch = /小题\s*(\d+)\s*(?:\(|（)(\d+)(?:分)(?:\)|）)/i.exec(questionStr);
+        if (scoreInNameMatch && scoreInNameMatch[2]) {
+            return parseInt(scoreInNameMatch[2]);
+        }
+        
+        // 根据列名中的提示获取满分值
+        if (questionStr.includes('小题7') || questionStr.includes('题7') || questionStr.includes('第7题')) {
+            return 20; // 小题7的满分是20分
+        } else if (questionStr.includes('小题6') || questionStr.includes('题6') || questionStr.includes('第6题')) {
+            return 20; // 小题6的满分是20分
+        } else if (questionStr.includes('小题5') || questionStr.includes('题5') || questionStr.includes('第5题')) {
+            return 15; // 小题5的满分是15分
+        } else if (questionStr.includes('小题4') || questionStr.includes('题4') || questionStr.includes('第4题')) {
+            return 15; // 小题4的满分是15分
+        } else {
+            // 默认其他小题满分为10分
+            return 10;
+        }
     }
 }
 
@@ -392,7 +429,14 @@ function renderQuestionScoreChart(questionScores) {
     if (!canvas) return;
     
     // 准备图表数据
-    const labels = questionScores.map(item => item.question);
+    const labels = questionScores.map(item => {
+        // 如果小题名称中已经包含分值信息，直接使用
+        if (String(item.question).includes('分)') || String(item.question).includes('分）')) {
+            return item.question;
+        }
+        // 否则，添加满分信息到标签
+        return `${item.question}(${item.maxScore}分)`;
+    });
     const scores = questionScores.map(item => item.score);
     const maxScores = questionScores.map(item => item.maxScore);
     
@@ -432,6 +476,8 @@ function renderQuestionScoreChart(questionScores) {
             scales: {
                 x: {
                     beginAtZero: true,
+                    // 调整X轴最大值以适应所有小题的满分
+                    suggestedMax: Math.max(...maxScores) * 1.1, // 添加一些边距
                     title: {
                         display: true,
                         text: '分数',
@@ -535,7 +581,12 @@ function generateQuestionScoreSummary(questionScores) {
     // 添加最高得分率题目
     bestQuestions.forEach(item => {
         const rate = (item.score / item.maxScore * 100).toFixed(1);
-        summaryHTML += `<li>${item.question}：${item.score}/${item.maxScore} (${rate}%)</li>`;
+        let questionText = item.question;
+        // 如果小题名称中未包含分值信息，添加满分信息
+        if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+            questionText = `${questionText}(${item.maxScore}分)`;
+        }
+        summaryHTML += `<li>${questionText}：${item.score}/${item.maxScore} (${rate}%)</li>`;
     });
     
     summaryHTML += `
@@ -549,7 +600,12 @@ function generateQuestionScoreSummary(questionScores) {
     // 添加最低得分率题目
     worstQuestions.forEach(item => {
         const rate = (item.score / item.maxScore * 100).toFixed(1);
-        summaryHTML += `<li>${item.question}：${item.score}/${item.maxScore} (${rate}%)</li>`;
+        let questionText = item.question;
+        // 如果小题名称中未包含分值信息，添加满分信息
+        if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+            questionText = `${questionText}(${item.maxScore}分)`;
+        }
+        summaryHTML += `<li>${questionText}：${item.score}/${item.maxScore} (${rate}%)</li>`;
     });
     
     summaryHTML += `
@@ -557,8 +613,22 @@ function generateQuestionScoreSummary(questionScores) {
             </div>
             <div class="summary-suggestion">
                 <h5>学习建议：</h5>
-                <p>建议重点复习得分率较低的题目类型，特别关注以下题型：${worstQuestions.map(item => item.question).join('、')}。</p>
-                <p>对于掌握较好的题目类型（${bestQuestions.map(item => item.question).join('、')}），建议保持现有学习方法，并尝试更具挑战性的题目。</p>
+                <p>建议重点复习得分率较低的题目类型，特别关注以下题型：${worstQuestions.map(item => {
+                    let questionText = item.question;
+                    // 如果小题名称中未包含分值信息，添加满分信息
+                    if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+                        questionText = `${questionText}(${item.maxScore}分)`;
+                    }
+                    return questionText;
+                }).join('、')}。</p>
+                <p>对于掌握较好的题目类型（${bestQuestions.map(item => {
+                    let questionText = item.question;
+                    // 如果小题名称中未包含分值信息，添加满分信息
+                    if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+                        questionText = `${questionText}(${item.maxScore}分)`;
+                    }
+                    return questionText;
+                }).join('、')}），建议保持现有学习方法，并尝试更具挑战性的题目。</p>
             </div>
         </div>
     `;
