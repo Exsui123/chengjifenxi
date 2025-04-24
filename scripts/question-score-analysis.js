@@ -339,11 +339,11 @@ function generateQuestionScoreAnalysisResult(studentRow, headers, questionColumn
     // 按钮区域HTML
     const buttonHTML = `
         <div id="questionScoreChartBtns" style="margin-bottom: 1rem; display: flex; gap: 1rem;">
-            <label style="cursor:pointer;">
+            <label style="cursor:pointer;" title="显示/隐藏满分柱子">
                 <input type="checkbox" id="toggleMaxScoreBar" ${showMaxScoreBar ? 'checked' : ''} /> 显示满分
             </label>
-            <label style="cursor:pointer;">
-                <input type="checkbox" id="toggleSortByScoreRate" ${sortByScoreRate ? 'checked' : ''} /> 按得分率排序
+            <label style="cursor:pointer;" title="按得分率排序并显示百分比">
+                <input type="checkbox" id="toggleSortByScoreRate" ${sortByScoreRate ? 'checked' : ''} /> 使用得分率模式
             </label>
         </div>
     `;
@@ -450,7 +450,7 @@ function generateQuestionScoreAnalysisResult(studentRow, headers, questionColumn
     
     try {
         // 渲染小题得分图表
-        renderQuestionScoreChart(questionScores, showMaxScoreBar);
+        renderQuestionScoreChart(questionScores, showMaxScoreBar, sortByScoreRate);
         
         // 生成得分概述
         generateQuestionScoreSummary(questionScores);
@@ -490,15 +490,16 @@ function generateQuestionScoreAnalysisResult(studentRow, headers, questionColumn
  * 渲染小题得分图表
  * @param {Array} questionScores - 小题分数数据
  * @param {boolean} showMaxScoreBar - 是否显示满分柱子
+ * @param {boolean} useScoreRate - 是否使用得分率模式（Y轴显示百分比）
  */
-function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
+function renderQuestionScoreChart(questionScores, showMaxScoreBar = true, useScoreRate = false) {
     const canvas = document.getElementById('questionScoreChart');
     if (!canvas) {
         console.error('找不到图表Canvas元素');
         return;
     }
     
-    console.log('开始渲染图表，数据:', questionScores);
+    console.log('开始渲染图表，数据:', questionScores, '显示满分:', showMaxScoreBar, '使用得分率模式:', useScoreRate);
     
     try {
         // 准备图表数据
@@ -510,28 +511,44 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
             // 否则，添加满分信息到标签
             return `${item.question}(${item.maxScore}分)`;
         });
-        const scores = questionScores.map(item => item.score);
-        const maxScores = questionScores.map(item => item.maxScore);
         
-        // 计算得分率
+        // 根据模式选择要显示的数据
+        let scores, maxValues;
+        if (useScoreRate) {
+            // 使用百分比模式：分数表示得分率（0-100%）
+            scores = questionScores.map(item => 
+                item.maxScore > 0 ? (item.score / item.maxScore * 100) : 0
+            );
+            maxValues = questionScores.map(() => 100); // 满分统一为100%
+        } else {
+            // 使用原始分数模式
+            scores = questionScores.map(item => item.score);
+            maxValues = questionScores.map(item => item.maxScore);
+        }
+        
+        // 计算得分率（用于显示在标签和提示中）
         const scoreRates = questionScores.map(item => 
             item.maxScore > 0 ? (item.score / item.maxScore * 100).toFixed(1) + '%' : 'N/A'
         );
         
         // 计算Y轴自适应刻度间隔
-        const maxScore = Math.max(...maxScores);
-        const minScore = Math.min(...maxScores);
-        // 期望的最大刻度数量（比如12~15个）
+        const maxValue = useScoreRate ? 100 : Math.max(...maxValues);
+        const minValue = useScoreRate ? 0 : Math.min(...scores);
+        // 期望的最大刻度数量
         const maxTicks = 12;
-        let stepSize = 1;
-        if (maxScore - minScore > 0) {
-            stepSize = Math.ceil((maxScore - minScore) / maxTicks);
+        let stepSize;
+        if (useScoreRate) {
+            // 百分比模式下使用固定的刻度间隔
+            stepSize = 10; // 每10%一个刻度
+        } else {
+            // 原始分数模式下动态计算刻度间隔
+            stepSize = Math.ceil((maxValue - minValue) / maxTicks);
             if (stepSize < 1) stepSize = 1;
         }
         
         // 组装datasets
         const datasets = [{
-            label: '得分',
+            label: useScoreRate ? '得分率' : '得分',
             data: scores,
             backgroundColor: questionScores.map(item => {
                 const rate = item.maxScore > 0 ? item.score / item.maxScore : 0;
@@ -542,17 +559,18 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
             borderColor: 'rgba(0, 0, 0, 0.1)',
             borderWidth: 1
         }];
+        
         if (showMaxScoreBar) {
             datasets.push({
-                label: '满分',
-                data: maxScores,
+                label: useScoreRate ? '100%' : '满分',
+                data: maxValues,
                 backgroundColor: 'rgba(0, 0, 0, 0.05)',
                 borderColor: 'rgba(0, 0, 0, 0.1)',
                 borderWidth: 1
             });
         }
         
-        // 创建水平条形图
+        // 创建柱状图
         const chart = new Chart(canvas, {
             type: 'bar',
             data: {
@@ -560,17 +578,16 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
                 datasets: datasets
             },
             options: {
-                // 竖向柱状图，默认indexAxis为'x'，无需设置
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
                     x: {
                         beginAtZero: true,
-                        // 调整X轴最大值以适应所有小题的满分
-                        suggestedMax: Math.max(...maxScores) * 1.1, // 添加一些边距
+                        // 调整X轴最大值
+                        suggestedMax: useScoreRate ? 105 : Math.max(...maxValues) * 1.1, // 添加一些边距
                         title: {
                             display: true,
-                            text: '分数',
+                            text: useScoreRate ? '得分率(%)' : '分数',
                             font: {
                                 size: 14
                             }
@@ -584,7 +601,7 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
                                 size: 14
                             }
                         },
-                        // 自适应分数间隔
+                        // 自适应间隔
                         ticks: {
                             stepSize: stepSize
                         }
@@ -595,8 +612,14 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
                         callbacks: {
                             afterLabel: function(context) {
                                 const index = context.dataIndex;
-                                if (context.datasetIndex === 0) { // 只在显示得分的数据集中显示得分率
-                                    return `得分率: ${scoreRates[index]}`;
+                                if (context.datasetIndex === 0) { // 只在显示得分的数据集中显示额外信息
+                                    if (useScoreRate) {
+                                        // 如果是百分比模式，显示原始分数
+                                        return `原始分数: ${questionScores[index].score}/${questionScores[index].maxScore}`;
+                                    } else {
+                                        // 如果是分数模式，显示得分率
+                                        return `得分率: ${scoreRates[index]}`;
+                                    }
                                 }
                                 return '';
                             }
@@ -608,7 +631,13 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
                         },
                         formatter: function(value, context) {
                             const index = context.dataIndex;
-                            return value + ' (' + scoreRates[index] + ')';
+                            if (useScoreRate) {
+                                // 百分比模式：显示得分率和原始分数
+                                return `${value.toFixed(1)}% (${questionScores[index].score}/${questionScores[index].maxScore})`;
+                            } else {
+                                // 分数模式：显示分数和得分率
+                                return `${value} (${scoreRates[index]})`;
+                            }
                         },
                         color: 'black',
                         anchor: 'end',
@@ -623,7 +652,7 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true) {
                     },
                     title: {
                         display: true,
-                        text: '个人小题得分情况',
+                        text: useScoreRate ? '个人小题得分率情况' : '个人小题得分情况',
                         font: {
                             size: 18
                         }
