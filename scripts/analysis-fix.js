@@ -128,4 +128,87 @@ const replaceErrorFunctions = function() {
 // 页面完全加载后执行替换操作
 window.addEventListener('load', function() {
     setTimeout(replaceErrorFunctions, 1000);
-}); 
+});
+
+/**
+ * 计算不同分数段的学生数量
+ * @param {Object} fileData - 文件数据
+ * @param {string} subject - 科目名称
+ * @param {Object} thresholds - 分数线设置
+ * @returns {Object} 各分数段学生数量统计
+ */
+function calculateScoreDistribution(fileData, subject, thresholds) {
+    if (!fileData || !fileData.data || !fileData.data.students || !subject || !thresholds) {
+        console.error('计算分数分布时缺少必要参数:', { fileData, subject, thresholds });
+        return {
+            excellentCount: 0,
+            goodCount: 0,
+            passCount: 0,
+            failCount: 0,
+            totalValidCount: 0,
+            invalidCount: 0
+        };
+    }
+
+    // 遍历学生数据，统计各分数段人数
+    let excellentCount = 0;
+    let goodCount = 0;
+    let passCount = 0;
+    let failCount = 0;
+    let invalidCount = 0;
+    let totalValidCount = 0;
+    
+    try {
+        // 查找学科列索引
+        const headers = fileData.data.headers || [];
+        const subjectIndex = headers.findIndex(header => header === subject);
+        
+        if (subjectIndex === -1) {
+            console.warn('未找到科目列:', subject);
+            return {
+                excellentCount: 0,
+                goodCount: 0,
+                passCount: 0,
+                failCount: 0,
+                totalValidCount: 0,
+                invalidCount: fileData.data.students.length
+            };
+        }
+        
+        // 统计各分数段人数
+        fileData.data.students.forEach(student => {
+            const score = parseFloat(student[subjectIndex]);
+            
+            if (isNaN(score)) {
+                invalidCount++;
+                return;
+            }
+            
+            totalValidCount++;
+            
+            if (score >= thresholds.excellentScore) {
+                excellentCount++;
+            } else if (score >= thresholds.goodScore) {
+                goodCount++;
+            } else if (score >= thresholds.passScore) {
+                passCount++;
+            } else {
+                failCount++;
+            }
+        });
+    } catch (error) {
+        console.error('计算分数分布时出错:', error);
+    }
+    
+    return {
+        excellentCount,
+        goodCount,
+        passCount,
+        failCount,
+        totalValidCount,
+        invalidCount
+    };
+}
+
+// 在页面加载后，将函数添加到window对象中
+window.calculateScoreDistribution = calculateScoreDistribution; 

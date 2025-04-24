@@ -2238,6 +2238,17 @@ function generateDetailAnalysisResult(studentData, subjects, fileData) {
         renderBarChart(studentData, displaySubjects, classAvgScores);
     }, 100);
     
+    // 计算班级分数分布数据
+    let excelDataCount = isSingleSubjectMode ? calculateScoreDistribution(fileData, selectedSubject, thresholds) : { excellentCount: 0, goodCount: 0, passCount: 0, failCount: 0, totalValidCount: 0, invalidCount: 0 };
+    
+    // 使用统计变量
+    const excellentCount = excelDataCount.excellentCount || 0;
+    const goodCount = excelDataCount.goodCount || 0;
+    const passCount = excelDataCount.passCount || 0;
+    const failCount = excelDataCount.failCount || 0;
+    const totalValidCount = excelDataCount.totalValidCount || fileData.data.students.length;
+    const invalidCount = excelDataCount.invalidCount || 0;
+    
     // 添加统计信息
     const statsElement = document.createElement('div');
     statsElement.className = 'level-proportion-stats';
