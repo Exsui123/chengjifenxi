@@ -185,6 +185,7 @@
                                 <option value="basic">基础指标展示</option>
                                 <option value="personal-detail">个人成绩详情图</option>
                                 <option value="personal-trend">个人成绩变化趋势图</option>
+                                <option value="personal-question-score">个人小题得分情况分析</option>
                                 <option value="class-level-proportion">班级分数等级占比分析</option>
                                 <option value="class-average-trend">班级平均分变化趋势分析</option>
                                 <option value="cross-class-average-comparison">跨班级平均分对比分析</option>
@@ -275,6 +276,41 @@
                         <!-- 生成按钮 -->
                         <div class="analysis-actions">
                             <button id="generateTrendBtn" class="btn primary-btn" disabled>生成趋势图</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 个人小题得分情况分析选项区域 -->
+                    <div id="questionScoreAnalysisOptions" style="display: none;" class="analysis-options">
+                        <div class="options-row">
+                            <!-- 文件选择列表 -->
+                            <div class="options-column">
+                                <h3>选择成绩表：</h3>
+                                <select id="questionScoreFileSelect" class="select-input">
+                                    <option value="">-- 请选择成绩表 --</option>
+                                    <!-- 动态加载文件选项 -->
+                                </select>
+                                <div id="questionScoreSelectedFileInfo" class="selected-file-info" style="display: none;">
+                                    <h4>已选择：</h4>
+                                    <div id="questionScoreSelectedFileDetail" class="selected-file-detail">
+                                        <!-- 动态加载已选择的文件 -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 学生选择下拉框 -->
+                            <div class="options-column">
+                                <div class="student-select-container">
+                                    <h3>选择学生：</h3>
+                                    <select id="questionScoreStudentSelect" class="select-input" disabled>
+                                        <option value="">-- 请先选择成绩表 --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 生成按钮 -->
+                        <div class="analysis-actions">
+                            <button id="generateQuestionScoreBtn" class="btn primary-btn" disabled>生成小题得分分析</button>
                         </div>
                     </div>
                     
@@ -510,7 +546,11 @@
     <script src="scripts/storage.js"></script>
     <script src="scripts/fileList.js"></script>
     <script src="scripts/analysis.js"></script>
+    <!-- 个人小题得分情况分析模块 -->
+    <script src="scripts/question-score-analysis.js"></script>
     <!-- 修复脚本 -->
     <script src="scripts/analysis-fix.js"></script>
+    <!-- 小题得分分析修复脚本 -->
+    <script src="scripts/score-analysis-fix.js"></script>
 </body>
 </html> 

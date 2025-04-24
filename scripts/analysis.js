@@ -70,6 +70,12 @@ function initAnalysisModule() {
                 showTrendAnalysisOptions();
                 clearAnalysisResult();
                 break;
+            case 'personal-question-score':
+                // 显示个人小题得分情况分析选项
+                console.log('选择了个人小题得分情况分析');
+                showQuestionScoreAnalysisOptions();
+                clearAnalysisResult();
+                break;
             case 'class-level-proportion':
                 // 显示班级分数等级占比分析选项
                 console.log('选择了班级分数等级占比分析');

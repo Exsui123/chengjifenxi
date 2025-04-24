@@ -211,4 +211,84 @@ function calculateScoreDistribution(fileData, subject, thresholds) {
 }
 
 // 在页面加载后，将函数添加到window对象中
-window.calculateScoreDistribution = calculateScoreDistribution; 
+window.calculateScoreDistribution = calculateScoreDistribution;
+
+// 等待DOM完全加载后执行
+document.addEventListener('DOMContentLoaded', function() {
+    // 修复hideAllAnalysisOptions函数
+    fixHideAllAnalysisOptions();
+    
+    // 修复个人小题得分情况分析功能
+    fixQuestionScoreAnalysis();
+});
+
+/**
+ * 修复hideAllAnalysisOptions函数
+ * 确保所有的分析选项区域都能被正确隐藏
+ */
+function fixHideAllAnalysisOptions() {
+    // 保存原始函数的引用
+    const originalHideAllAnalysisOptions = window.hideAllAnalysisOptions;
+    
+    // 覆盖原始函数
+    window.hideAllAnalysisOptions = function() {
+        // 调用原始函数
+        if (typeof originalHideAllAnalysisOptions === 'function') {
+            originalHideAllAnalysisOptions();
+        }
+        
+        // 调用其他隐藏函数
+        if (typeof hideQuestionScoreAnalysisOptions === 'function') {
+            hideQuestionScoreAnalysisOptions();
+        }
+    };
+}
+
+/**
+ * 修复个人小题得分情况分析功能
+ */
+function fixQuestionScoreAnalysis() {
+    console.log('正在修复个人小题得分情况分析功能...');
+    
+    // 监听分析类型选择下拉框的变化
+    const analysisTypeSelect = document.getElementById('analysisTypeSelect');
+    if (!analysisTypeSelect) {
+        console.error('未找到分析类型选择下拉框');
+        return;
+    }
+    
+    // 添加change事件监听器
+    analysisTypeSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        console.log('分析类型变更为:', selectedValue);
+        
+        if (selectedValue === 'personal-question-score') {
+            console.log('选择了个人小题得分情况分析，确保显示相关选项');
+            
+            // 确保加载选项区域
+            setTimeout(function() {
+                if (typeof window.showQuestionScoreAnalysisOptions === 'function') {
+                    window.showQuestionScoreAnalysisOptions();
+                    
+                    // 再次加载文件选项（确保数据加载）
+                    if (typeof window.loadQuestionScoreFileOptions === 'function') {
+                        setTimeout(window.loadQuestionScoreFileOptions, 100);
+                    }
+                } else {
+                    console.error('showQuestionScoreAnalysisOptions函数不可用');
+                }
+            }, 100);
+        }
+    });
+    
+    // 另外，检查当前是否已选择"个人小题得分情况分析"
+    if (analysisTypeSelect.value === 'personal-question-score') {
+        console.log('当前已选择个人小题得分情况分析，立即显示相关选项');
+        
+        if (typeof window.showQuestionScoreAnalysisOptions === 'function') {
+            setTimeout(window.showQuestionScoreAnalysisOptions, 100);
+        }
+    }
+    
+    console.log('个人小题得分情况分析功能修复完成');
+} 
