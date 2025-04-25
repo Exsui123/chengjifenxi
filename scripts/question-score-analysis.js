@@ -701,68 +701,320 @@ function generateQuestionScoreSummary(questionScores) {
     const bestQuestions = sortedByRate.slice(0, 3);
     const worstQuestions = sortedByRate.slice(-3).reverse();
     
-    // 创建概述HTML
-    let summaryHTML = `
-        <div class="score-summary-card">
-            <div class="summary-total">
-                <p><strong>总得分：</strong>${totalScore}/${totalMaxScore} (${totalScoreRate})</p>
-            </div>
-            <div class="summary-strength">
-                <h5>掌握较好的题目：</h5>
-                <ul>
-    `;
+    // 获取总体评级
+    const rateValue = totalMaxScore > 0 ? (totalScore / totalMaxScore * 100) : 0;
+    let ratingText, ratingClass;
+    if (rateValue >= 90) {
+        ratingText = "优秀";
+        ratingClass = "excellent";
+    } else if (rateValue >= 75) {
+        ratingText = "良好";
+        ratingClass = "good";
+    } else if (rateValue >= 60) {
+        ratingText = "及格";
+        ratingClass = "pass";
+    } else {
+        ratingText = "需加强";
+        ratingClass = "fail";
+    }
     
-    // 添加最高得分率题目
-    bestQuestions.forEach(item => {
-        const rate = (item.score / item.maxScore * 100).toFixed(1);
-        let questionText = item.question;
-        // 如果小题名称中未包含分值信息，添加满分信息
-        if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
-            questionText = `${questionText}(${item.maxScore}分)`;
+    // 为得分概述添加样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .summary-container {
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            color: #333;
         }
-        summaryHTML += `<li>${questionText}：${item.score}/${item.maxScore} (${rate}%)</li>`;
-    });
-    
-    summaryHTML += `
-                </ul>
-            </div>
-            <div class="summary-weakness">
-                <h5>需要加强的题目：</h5>
-                <ul>
-    `;
-    
-    // 添加最低得分率题目
-    worstQuestions.forEach(item => {
-        const rate = (item.score / item.maxScore * 100).toFixed(1);
-        let questionText = item.question;
-        // 如果小题名称中未包含分值信息，添加满分信息
-        if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
-            questionText = `${questionText}(${item.maxScore}分)`;
+        .summary-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            overflow: hidden;
         }
-        summaryHTML += `<li>${questionText}：${item.score}/${item.maxScore} (${rate}%)</li>`;
-    });
+        .card-header {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+        .card-header-icon {
+            margin-right: 10px;
+            color: #1976d2;
+            font-size: 20px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+            color: #333;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .summary-highlight {
+            border-left: 3px solid #1976d2;
+            background-color: #f5f9fd;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .highlight-text {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .highlight-text strong {
+            color: #1976d2;
+        }
+        .score-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .score-card {
+            flex: 1;
+            min-width: 250px;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+        }
+        .strength-card {
+            background-color: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        .weakness-card {
+            background-color: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        .card-icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            opacity: 0.2;
+        }
+        .strength-card .card-icon {
+            color: #4caf50;
+        }
+        .weakness-card .card-icon {
+            color: #f44336;
+        }
+        .score-card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 0;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .strength-card .score-card-title {
+            color: #2e7d32;
+        }
+        .weakness-card .score-card-title {
+            color: #c62828;
+        }
+        .score-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .question-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .question-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .score-value {
+            white-space: nowrap;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        .score-bar-container {
+            height: 6px;
+            background-color: rgba(0,0,0,0.05);
+            border-radius: 3px;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .score-bar {
+            height: 100%;
+            border-radius: 3px;
+        }
+        .score-high {
+            background-color: #4caf50;
+        }
+        .score-medium {
+            background-color: #2196f3;
+        }
+        .score-low {
+            background-color: #f44336;
+        }
+        .suggestion-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .suggestion-item {
+            flex: 1;
+            min-width: 200px;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 3px solid #1976d2;
+        }
+        .suggestion-item h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 15px;
+            color: #1976d2;
+            display: flex;
+            align-items: center;
+        }
+        .suggestion-item h5:before {
+            content: '';
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%231976d2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>');
+        }
+        .suggestion-item p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #555;
+        }
+    `;
+    summaryContainer.appendChild(style);
     
-    summaryHTML += `
-                </ul>
+    // 创建成绩总结HTML
+    const summaryHTML = `
+        <div class="summary-container">
+            <!-- 总体概述卡片 -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <div class="card-header-icon">📊</div>
+                    <h3 class="card-title">得分情况概述</h3>
+                </div>
+                <div class="card-body">
+                    <div class="summary-highlight">
+                        <p class="highlight-text">
+                            总得分：<strong>${totalScore}/${totalMaxScore}</strong>，得分率：<strong>${totalScoreRate}</strong>，
+                            整体表现<strong>${ratingText}</strong>。${
+                                rateValue >= 75 ? 
+                                '大部分题目掌握良好，可以继续保持。' : 
+                                '部分题目需要加强，建议重点复习。'
+                            }
+                        </p>
+                    </div>
+                    
+                    <!-- 得分卡片网格 -->
+                    <div class="score-grid">
+                        <!-- 掌握较好的题目卡片 -->
+                        <div class="score-card strength-card">
+                            <div class="card-icon">⭐</div>
+                            <h4 class="score-card-title">掌握较好的题目</h4>
+                            <div class="strength-list">
+                                ${bestQuestions.map(item => {
+                                    const rate = (item.score / item.maxScore * 100).toFixed(1);
+                                    let questionText = item.question;
+                                    if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+                                        questionText = `${questionText}(${item.maxScore}分)`;
+                                    }
+                                    
+                                    const barClass = rate >= 90 ? 'score-high' : (rate >= 70 ? 'score-medium' : 'score-low');
+                                    
+                                    return `
+                                        <div class="score-item">
+                                            <div class="question-info">
+                                                <div class="question-name">${questionText}</div>
+                                                <div class="score-bar-container">
+                                                    <div class="score-bar ${barClass}" style="width: ${rate}%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="score-value">${item.score}/${item.maxScore} (${rate}%)</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- 需要加强的题目卡片 -->
+                        <div class="score-card weakness-card">
+                            <div class="card-icon">⚠️</div>
+                            <h4 class="score-card-title">需要加强的题目</h4>
+                            <div class="weakness-list">
+                                ${worstQuestions.map(item => {
+                                    const rate = (item.score / item.maxScore * 100).toFixed(1);
+                                    let questionText = item.question;
+                                    if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+                                        questionText = `${questionText}(${item.maxScore}分)`;
+                                    }
+                                    
+                                    const barClass = rate >= 90 ? 'score-high' : (rate >= 70 ? 'score-medium' : 'score-low');
+                                    
+                                    return `
+                                        <div class="score-item">
+                                            <div class="question-info">
+                                                <div class="question-name">${questionText}</div>
+                                                <div class="score-bar-container">
+                                                    <div class="score-bar ${barClass}" style="width: ${rate}%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="score-value">${item.score}/${item.maxScore} (${rate}%)</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="summary-suggestion">
-                <h5>学习建议：</h5>
-                <p>建议重点复习得分率较低的题目类型，特别关注以下题型：${worstQuestions.map(item => {
-                    let questionText = item.question;
-                    // 如果小题名称中未包含分值信息，添加满分信息
-                    if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
-                        questionText = `${questionText}(${item.maxScore}分)`;
-                    }
-                    return questionText;
-                }).join('、')}。</p>
-                <p>对于掌握较好的题目类型（${bestQuestions.map(item => {
-                    let questionText = item.question;
-                    // 如果小题名称中未包含分值信息，添加满分信息
-                    if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
-                        questionText = `${questionText}(${item.maxScore}分)`;
-                    }
-                    return questionText;
-                }).join('、')}），建议保持现有学习方法，并尝试更具挑战性的题目。</p>
+            
+            <!-- 学习建议卡片 -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <div class="card-header-icon">💡</div>
+                    <h3 class="card-title">学习建议</h3>
+                </div>
+                <div class="card-body">
+                    <div class="suggestion-list">
+                        <div class="suggestion-item">
+                            <h5>保持优势学习态势</h5>
+                            <p>继续保持对掌握较好题目类型的复习频率，并尝试挑战更高难度的题目：${bestQuestions.map(item => {
+                                let questionText = item.question;
+                                if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+                                    questionText = `${questionText}(${item.maxScore}分)`;
+                                }
+                                return questionText;
+                            }).join('、')}。</p>
+                        </div>
+                        
+                        <div class="suggestion-item">
+                            <h5>增强知识连贯性</h5>
+                            <p>成绩有一定波动，建议重点对低分题目进行知识点之间的联系，及时复习巩固：${worstQuestions.map(item => {
+                                let questionText = item.question;
+                                if (!String(questionText).includes('分)') && !String(questionText).includes('分）')) {
+                                    questionText = `${questionText}(${item.maxScore}分)`;
+                                }
+                                return questionText;
+                            }).join('、')}。</p>
+                        </div>
+                        
+                        <div class="suggestion-item">
+                            <h5>优化时间分配</h5>
+                            <p>根据各科目表现，合理调整学习时间分配，对表现较弱的科目增加投入，同时保持优势科目的水平。</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
