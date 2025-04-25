@@ -632,11 +632,11 @@ function renderQuestionScoreChart(questionScores, showMaxScoreBar = true, useSco
                         formatter: function(value, context) {
                             const index = context.dataIndex;
                             if (useScoreRate) {
-                                // 百分比模式：显示得分率和原始分数
-                                return `${value.toFixed(1)}% (${questionScores[index].score}/${questionScores[index].maxScore})`;
+                                // 百分比模式：只显示得分率百分比，不显示原始分数
+                                return `${value.toFixed(1)}%`;
                             } else {
-                                // 分数模式：显示分数和得分率
-                                return `${value} (${scoreRates[index]})`;
+                                // 分数模式：只显示得分率百分比，不显示原始分数
+                                return `${scoreRates[index]}`;
                             }
                         },
                         color: 'black',
