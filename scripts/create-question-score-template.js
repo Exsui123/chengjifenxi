@@ -72,9 +72,9 @@ if (typeof XLSX === 'undefined') {
     }
     instructionSheet['!rows'] = rowHeights;
     
-    // 添加工作表到工作簿
-    XLSX.utils.book_append_sheet(workbook, instructionSheet, '使用说明');
+    // 添加工作表到工作簿 - 修改顺序：先添加示例数据，后添加使用说明
     XLSX.utils.book_append_sheet(workbook, worksheet, '示例数据');
+    XLSX.utils.book_append_sheet(workbook, instructionSheet, '使用说明');
     
     // 生成Excel文件并保存
     const excelData = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
