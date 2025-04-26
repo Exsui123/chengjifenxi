@@ -555,6 +555,18 @@ function saveFileData() {
     // 显示成功消息
     showMessage('数据已成功保存', 'success');
     
+    // 触发文件保存事件，通知模块连接器
+    const fileSavedEvent = new CustomEvent('fileSaved', { detail: { fileId: fileId } });
+    document.dispatchEvent(fileSavedEvent);
+    console.log('已触发fileSaved事件');
+    
+    // 尝试刷新数据分析模块的文件列表
+    if (typeof refreshAnalysisFileLists === 'function') {
+        refreshAnalysisFileLists();
+    } else if (window.ModuleConnector && typeof window.ModuleConnector.refreshAllAnalysisLists === 'function') {
+        window.ModuleConnector.refreshAllAnalysisLists();
+    }
+    
     // 清除当前文件
     clearSelectedFile();
     
@@ -563,6 +575,58 @@ function saveFileData() {
     if (fileListLink) {
         fileListLink.click();
     }
+}
+
+/**
+ * 刷新数据分析模块的所有文件选择列表
+ */
+function refreshAnalysisFileLists() {
+    console.log('刷新数据分析模块的所有文件选择列表...');
+    
+    // 刷新分析模块中的文件列表
+    if (typeof loadAllFiles === 'function') {
+        loadAllFiles();
+    }
+    
+    // 刷新各个分析类型的文件列表
+    if (typeof loadFileDropdownItems === 'function') {
+        loadFileDropdownItems(); // 趋势分析文件列表
+    }
+    
+    if (typeof loadDetailFileDropdownItems === 'function') {
+        loadDetailFileDropdownItems(); // 详情分析文件列表
+    }
+    
+    if (typeof loadBasicFileSelectOptions === 'function') {
+        loadBasicFileSelectOptions(); // 基础分析文件列表
+    }
+    
+    if (typeof loadLevelProportionFileOptions === 'function') {
+        loadLevelProportionFileOptions(); // 班级分数等级占比分析文件列表
+    }
+    
+    if (typeof loadAverageFileDropdownItems === 'function') {
+        loadAverageFileDropdownItems(); // 班级平均分变化趋势分析文件列表
+    }
+    
+    if (typeof loadCrossAverageFileDropdownItems === 'function') {
+        loadCrossAverageFileDropdownItems(); // 跨班级平均分对比分析文件列表
+    }
+    
+    if (typeof loadCrossLevelFileDropdownItems === 'function') {
+        loadCrossLevelFileDropdownItems(); // 跨班级分数等级占比分析文件列表
+    }
+    
+    if (typeof loadCrossScoreLevelFileDropdownItems === 'function') {
+        loadCrossScoreLevelFileDropdownItems(); // 跨班级分数等级占比分析文件列表
+    }
+
+    // 刷新小题得分分析的文件选择列表
+    if (typeof loadQuestionScoreFileOptions === 'function') {
+        loadQuestionScoreFileOptions(); // 小题得分分析文件列表
+    }
+    
+    console.log('所有文件选择列表刷新完成');
 }
 
 /**

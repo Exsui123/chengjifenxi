@@ -291,4 +291,42 @@ function fixQuestionScoreAnalysis() {
     }
     
     console.log('个人小题得分情况分析功能修复完成');
-} 
+}
+
+/**
+ * 确保分析模块关键函数能被全局访问
+ * 这个函数会检查并全局暴露数据分析模块中的关键函数
+ */
+function exposeAnalysisFunctions() {
+    console.log('正在确保分析模块关键函数被正确导出...');
+    
+    // 定义需要暴露的函数列表及其所属模块
+    const functionList = [
+        { name: 'loadAllFiles', module: 'analysis' },
+        { name: 'loadFileDropdownItems', module: 'analysis' },
+        { name: 'loadDetailFileDropdownItems', module: 'analysis' },
+        { name: 'loadBasicFileSelectOptions', module: 'analysis' },
+        { name: 'loadLevelProportionFileOptions', module: 'analysis' },
+        { name: 'loadAverageFileDropdownItems', module: 'analysis' },
+        { name: 'loadCrossAverageFileDropdownItems', module: 'analysis' },
+        { name: 'loadCrossLevelFileDropdownItems', module: 'analysis' },
+        { name: 'loadCrossScoreLevelFileDropdownItems', module: 'analysis' },
+        { name: 'loadQuestionScoreFileOptions', module: 'questionScoreAnalysis' }
+    ];
+    
+    // 检查每个函数并导出
+    functionList.forEach(func => {
+        // 如果函数已经存在但没有被暴露到全局
+        if (typeof window[func.name] !== 'function' && typeof eval(func.name) === 'function') {
+            window[func.name] = eval(func.name);
+            console.log(`已导出函数: ${func.name}`);
+        }
+    });
+    
+    console.log('分析模块关键函数导出检查完成');
+}
+
+// 在页面完全加载后执行函数导出检查
+window.addEventListener('load', function() {
+    setTimeout(exposeAnalysisFunctions, 1500);
+}); 
