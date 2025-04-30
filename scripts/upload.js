@@ -567,6 +567,15 @@ function saveFileData() {
         window.ModuleConnector.refreshAllAnalysisLists();
     }
     
+    // 特别刷新小题得分分析模块的文件列表
+    if (typeof window.tryRefreshQuestionScoreFileOptions === 'function') {
+        // 立即尝试刷新
+        window.tryRefreshQuestionScoreFileOptions();
+        
+        // 延迟再次尝试刷新，确保DOM已更新
+        setTimeout(window.tryRefreshQuestionScoreFileOptions, 500);
+    }
+    
     // 清除当前文件
     clearSelectedFile();
     
