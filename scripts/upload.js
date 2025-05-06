@@ -660,23 +660,45 @@ function initQuestionScoreTemplateDownload() {
     downloadLink.addEventListener('click', function(e) {
         e.preventDefault();
         
-        // 如果有引入模板生成脚本，则使用它
-        if (typeof XLSX !== 'undefined') {
+        // 确保XLSX库已加载
+        if (typeof XLSX === 'undefined') {
+            showMessage('XLSX库未加载，正在尝试加载...', 'info');
+            
+            // 尝试加载XLSX库
+            const xlsxScript = document.createElement('script');
+            xlsxScript.src = 'scripts/lib/xlsx.full.min.js';
+            xlsxScript.onload = function() {
+                showMessage('XLSX库加载成功，正在生成模板...', 'info');
+                loadTemplateScript();
+            };
+            xlsxScript.onerror = function() {
+                showMessage('无法加载XLSX库，请刷新页面后重试', 'error');
+            };
+            document.body.appendChild(xlsxScript);
+        } else {
+            loadTemplateScript();
+        }
+        
+        function loadTemplateScript() {
+            // 加载模板生成脚本
             const scriptElement = document.createElement('script');
             scriptElement.src = 'scripts/create-question-score-template.js';
-            document.body.appendChild(scriptElement);
             
             // 显示加载中提示
             showMessage('正在生成小题得分分析模板...', 'info');
             
-            // 脚本加载完成后移除
+            // 脚本加载完成或失败的处理
             scriptElement.onload = function() {
                 setTimeout(function() {
                     document.body.removeChild(scriptElement);
                 }, 1000);
             };
-        } else {
-            showMessage('无法生成模板，请稍后再试', 'error');
+            
+            scriptElement.onerror = function() {
+                showMessage('模板生成脚本加载失败，请稍后再试', 'error');
+            };
+            
+            document.body.appendChild(scriptElement);
         }
     });
 } 

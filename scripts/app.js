@@ -149,4 +149,16 @@ document.head.insertAdjacentHTML('beforeend', `
     border-left: 4px solid #4a6cf7;
 }
 </style>
-`); 
+`);
+
+// 确保XLSX库在全局可用
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('成绩分析系统初始化...');
+    
+    // 检查并确保XLSX库可用
+    if (typeof XLSX === 'undefined') {
+        console.warn('XLSX库尚未加载，系统部分功能可能无法正常工作');
+    } else {
+        console.log('XLSX库已加载');
+    }
+}); 
